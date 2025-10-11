@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,6 +29,14 @@ class _BannerSliderState extends State<BannerSlider> {
   int _currentIndex = 0;
   Timer? _timer;
 
+  // Image animation variables
+  int _currentImageIndex = 0;
+  Timer? _imageTimer;
+  final List<String> _images = [
+    'assets/images/women.png',
+    'assets/images/women-2.png'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -34,11 +44,13 @@ class _BannerSliderState extends State<BannerSlider> {
     if (widget.banners.length > 1) {
       _startAutoSlide();
     }
+    _startImageAnimation();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _imageTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -50,7 +62,7 @@ class _BannerSliderState extends State<BannerSlider> {
         _pageController.animateToPage(
           _currentIndex,
           duration: const Duration(milliseconds: 1000),
-          curve: Curves.easeInOut,
+          curve: Curves.bounceOut,
         );
       }
     });
@@ -59,6 +71,16 @@ class _BannerSliderState extends State<BannerSlider> {
   void _onPageChanged(final int index) {
     setState(() {
       _currentIndex = index;
+    });
+  }
+
+  void _startImageAnimation() {
+    _imageTimer = Timer.periodic(const Duration(seconds: 3), (final timer) {
+      if (mounted) {
+        setState(() {
+          _currentImageIndex = (_currentImageIndex + 1) % _images.length;
+        });
+      }
     });
   }
 
@@ -146,7 +168,7 @@ class _BannerSliderState extends State<BannerSlider> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
       decoration: BoxDecoration(
         gradient: isDarkMode
             ? LinearGradient(
@@ -162,7 +184,6 @@ class _BannerSliderState extends State<BannerSlider> {
             : LinearGradient(
                 colors: [
                   Theme.of(context).primaryColor,
-                  // ignore: deprecated_member_use
                   Theme.of(context).primaryColor.withOpacity(0.8),
                 ],
                 begin: Alignment.topLeft,
@@ -170,45 +191,125 @@ class _BannerSliderState extends State<BannerSlider> {
               ),
         borderRadius: BorderRadius.circular(widget.borderRadius),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          const Text(
-            'Welcome to topjobs!',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Find your dream job today',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          if (widget.jobCount != null && widget.jobCount! > 0) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          // Women image positioned absolutely - half out of box (behind content)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: const Color(0xFFF0BE28).withOpacity(0.9),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(0),
+                // boxShadow: [
+                //   BoxShadow(
+                //     color:
+                //         const Color.fromARGB(255, 146, 6, 6).withOpacity(0.2),
+                //     blurRadius: 12,
+                //     offset: const Offset(0, 6),
+                //   ),
+                // ],
               ),
-              child: Text(
-                '${widget.jobCount} jobs available',
-                style: const TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 1800),
+                      transitionBuilder: (final Widget child,
+                          final Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                      child: Image.asset(
+                        _images[_currentImageIndex],
+                        key: ValueKey(_images[_currentImageIndex]),
+                        fit: BoxFit.cover,
+                        width: 260,
+                        height: 260,
+                        errorBuilder:
+                            (final context, final error, final stackTrace) {
+                          return Container(
+                            color: Colors.white.withOpacity(0.2),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Cover overlay for better blending
+                    // Container(
+                    //   width: 260,
+                    //   height: 260,
+                    //   decoration: BoxDecoration(
+                    //     gradient: LinearGradient(
+                    //       begin: Alignment.topLeft,
+                    //       end: Alignment.bottomRight,
+                    //       colors: [
+                    //         Colors.black.withOpacity(0.1),
+                    //         Colors.black.withOpacity(0.3),
+                    //         Colors.transparent,
+                    //       ],
+                    //       stops: const [0.0, 0.5, 1.0],
+                    //     ),
+                    //   ),
+                    // ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
+          // Text content (in front of image)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Welcome to topjobs!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Find your dream job today',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                if (widget.jobCount != null && widget.jobCount! > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0BE28).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${widget.jobCount} jobs available',
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 0, 0, 0),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

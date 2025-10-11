@@ -278,6 +278,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           child: InkWell(
             onTap: () {
+              // Increment view count when job is tapped
+              context.read<JobProvider>().incrementViewCount(job.comments);
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
