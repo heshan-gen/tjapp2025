@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../data/rss_categories.dart';
@@ -26,6 +27,7 @@ class _CategorySelectorState extends State<CategorySelector>
   // Auto scroll variables
   bool _isAutoScrolling = false;
   int _currentIndex = 0;
+  Timer? _autoScrollTimer;
 
   @override
   void initState() {
@@ -37,7 +39,7 @@ class _CategorySelectorState extends State<CategorySelector>
     );
 
     // Start auto scroll after a delay
-    Future.delayed(const Duration(seconds: 2), () {
+    _autoScrollTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
         _startAutoScroll();
       }
@@ -46,6 +48,7 @@ class _CategorySelectorState extends State<CategorySelector>
 
   @override
   void dispose() {
+    _autoScrollTimer?.cancel();
     _scrollController.dispose();
     _animationController.dispose();
     super.dispose();

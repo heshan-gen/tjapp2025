@@ -72,6 +72,8 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         titleTextStyle: GoogleFonts.roboto(
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -145,6 +147,8 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         titleTextStyle: GoogleFonts.roboto(
           fontSize: 20,
           fontWeight: FontWeight.w600,

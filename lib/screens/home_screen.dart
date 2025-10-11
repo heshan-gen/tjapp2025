@@ -45,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _messageTimer?.cancel();
+    _messageTimer = null;
     super.dispose();
   }
 
@@ -243,13 +244,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (mounted) {
                     setState(() {
                       if (_expandedCards.length ==
-                          context.read<JobProvider>().jobs.length) {
+                          context
+                              .read<JobProvider>()
+                              .jobsWithViewCounts
+                              .length) {
                         _expandedCards.clear();
                       } else {
                         _expandedCards.addAll(
                           context
                               .read<JobProvider>()
-                              .jobs
+                              .jobsWithViewCounts
                               .map((final job) => job.comments),
                         );
                       }
@@ -266,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHotJobs(final JobProvider jobProvider) {
     // Filter jobs with DEFZZZ guid only
-    final hotJobs = jobProvider.jobs
+    final hotJobs = jobProvider.jobsWithViewCounts
         .where((final job) => job.guid.contains('DEFZZZ'))
         .take(100)
         .toList();
@@ -326,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Group jobs by their source feed and get top 10 from each category
     final Map<String, List<Job>> jobsByCategory = {};
 
-    for (final job in jobProvider.jobs) {
+    for (final job in jobProvider.jobsWithViewCounts) {
       // Extract category from feed URL
       final String category = _getCategoryFromFeedUrl(job.feedUrl);
 
@@ -641,6 +645,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ],
+                                // View count (only show if > 0)
+                                if (job.viewCount > 0) ...[
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.visibility,
+                                    size: 16,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${job.viewCount} views',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ],
@@ -909,6 +931,8 @@ class _TypewriterTextState extends State<TypewriterText> {
   void dispose() {
     _timer?.cancel();
     _cursorTimer?.cancel();
+    _timer = null;
+    _cursorTimer = null;
     super.dispose();
   }
 

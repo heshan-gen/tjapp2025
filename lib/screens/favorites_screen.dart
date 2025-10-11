@@ -95,7 +95,34 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       body: Consumer<JobProvider>(
         builder: (final context, final jobProvider, final child) {
-          final favoriteJobs = jobProvider.getFavoriteJobs();
+          final favoriteJobs = jobProvider.getFavoriteJobs().map((final job) {
+            final viewCount = jobProvider.getViewCount(job.comments);
+            return Job(
+              id: job.id,
+              title: job.title,
+              company: job.company,
+              location: job.location,
+              salary: job.salary,
+              description: job.description,
+              requirements: job.requirements,
+              type: job.type,
+              experience: job.experience,
+              postedDate: job.postedDate,
+              closingDate: job.closingDate,
+              author: job.author,
+              jobId: job.jobId,
+              comments: job.comments,
+              applicantCode: job.applicantCode,
+              feedUrl: job.feedUrl,
+              publisher: job.publisher,
+              isRemote: job.isRemote,
+              skills: job.skills,
+              guid: job.guid,
+              isFavorite: job.isFavorite,
+              gradientColors: job.gradientColors,
+              viewCount: viewCount,
+            );
+          }).toList();
 
           if (favoriteJobs.isEmpty) {
             return Center(
@@ -484,6 +511,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           _formatClosingDate(job.closingDate!),
                           style: TextStyle(
                             color: _getClosingDateColor(job.closingDate!),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      // View count (only show if > 0)
+                      if (job.viewCount > 0) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.visibility,
+                          size: 16,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${job.viewCount} views',
+                          style: const TextStyle(
+                            color: Colors.blue,
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),

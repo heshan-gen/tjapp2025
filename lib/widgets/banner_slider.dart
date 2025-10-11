@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/banner.dart' as banner_model;
 
 class BannerSlider extends StatefulWidget {
@@ -223,11 +224,17 @@ class _BannerSliderState extends State<BannerSlider> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(widget.borderRadius),
-          child: Image.network(
-            banner.image,
+          child: CachedNetworkImage(
+            imageUrl: banner.image,
             fit: BoxFit.fitWidth,
             width: double.infinity,
-            errorBuilder: (final context, final error, final stackTrace) {
+            placeholder: (final context, final url) => Container(
+              color: Colors.grey[200],
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            errorWidget: (final context, final url, final error) {
               return Container(
                 color: Colors.white,
                 child: const Center(

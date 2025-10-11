@@ -1,7 +1,5 @@
 # topjobs - Flutter Mobile App
 
-Developer - Heshan Pramith (SSE/UI/UX) 0718462164 / heshan@genesiis.com / heshanonlive@gmail.com
-
 A modern Flutter mobile application for job searching and career opportunities, designed for both Android and iOS platforms.
 
 ## Features

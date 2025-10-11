@@ -1,10 +1,12 @@
 // ignore_for_file: unused_local_variable, curly_braces_in_flow_control_structures
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../data/rss_categories.dart';
+import '../services/view_count_service.dart';
 
 class Job {
   Job({
@@ -30,6 +32,7 @@ class Job {
     this.guid = '',
     this.isFavorite = false,
     this.gradientColors = const [],
+    this.viewCount = 0,
   });
   final String id;
   final String title;
@@ -53,6 +56,7 @@ class Job {
   final String guid;
   final bool isFavorite;
   final List<Color> gradientColors;
+  final int viewCount;
 }
 
 class JobProvider with ChangeNotifier {
@@ -138,6 +142,9 @@ class JobProvider with ChangeNotifier {
   String _selectedExperience = '';
   String? _selectedCategory;
 
+  // Search debouncing
+  Timer? _searchTimer;
+
   // SharedPreferences key for storing favorites
   static const String _favoritesKey = 'favorite_job_ids';
 
@@ -208,6 +215,13 @@ class JobProvider with ChangeNotifier {
 
       _jobs = allJobs;
       _filteredJobs = allJobs;
+
+      // Load favorites after jobs are loaded
+      await _loadFavorites();
+
+      // Load view counts in background (non-blocking)
+      loadViewCounts();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -426,6 +440,7 @@ class JobProvider with ChangeNotifier {
               isFavorite: false, // Default to not favorite
               gradientColors:
                   _getRandomGradientColors(), // Add random gradient colors
+              viewCount: 0, // Default view count
             );
             jobs.add(job);
           }
@@ -684,9 +699,12 @@ class JobProvider with ChangeNotifier {
   }
 
   void searchJobs(final String query) {
-    _searchQuery = query;
-    _applyFilters();
-    _applyCategoryFilters();
+    _searchTimer?.cancel();
+    _searchTimer = Timer(const Duration(milliseconds: 300), () {
+      _searchQuery = query;
+      _applyFilters();
+      _applyCategoryFilters();
+    });
   }
 
   void filterByLocation(final String location) {
@@ -725,7 +743,7 @@ class JobProvider with ChangeNotifier {
   }
 
   void _applyFilters() {
-    _filteredJobs = _jobs.where((final job) {
+    final newFilteredJobs = _jobs.where((final job) {
       final bool matchesSearch = _searchQuery.isEmpty ||
           job.title
               .trim()
@@ -762,7 +780,12 @@ class JobProvider with ChangeNotifier {
           matchesCategory;
     }).toList();
 
-    notifyListeners();
+    // Only update and notify if the filtered list actually changed
+    if (_filteredJobs.length != newFilteredJobs.length ||
+        !_listsEqual(_filteredJobs, newFilteredJobs)) {
+      _filteredJobs = newFilteredJobs;
+      notifyListeners();
+    }
   }
 
   void _applyCategoryFilters() {
@@ -876,6 +899,15 @@ class JobProvider with ChangeNotifier {
     return regex.hasMatch(jobLoc);
   }
 
+  // Helper method to compare two job lists efficiently
+  bool _listsEqual(final List<Job> list1, final List<Job> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i].comments != list2[i].comments) return false;
+    }
+    return true;
+  }
+
   // Load favorites from device storage
   Future<void> _loadFavorites() async {
     try {
@@ -937,5 +969,191 @@ class JobProvider with ChangeNotifier {
     return _jobs
         .where((final job) => _favoriteJobIds.contains(job.comments))
         .toList();
+  }
+
+  // View count methods
+  Map<String, int> _viewCounts = {};
+  StreamSubscription<Map<String, int>>? _viewCountSubscription;
+
+  /// Load view counts for all jobs (optimized)
+  Future<void> loadViewCounts() async {
+    try {
+      // Load view counts in background without blocking UI
+      _loadViewCountsInBackground();
+    } catch (e) {
+      // Silently fail to avoid blocking the app
+    }
+  }
+
+  /// Load view counts in background (optimized)
+  Future<void> _loadViewCountsInBackground() async {
+    try {
+      // Only load view counts for visible jobs (first 50) to improve performance
+      final visibleJobs =
+          _jobs.take(50).map((final job) => job.comments).toList();
+
+      if (visibleJobs.isNotEmpty) {
+        _viewCounts = await ViewCountService.getViewCounts(visibleJobs);
+      }
+
+      // Initialize all jobs with 0 view count
+      for (final job in _jobs) {
+        _viewCounts.putIfAbsent(job.comments, () => 0);
+      }
+
+      // Notify listeners
+      notifyListeners();
+    } catch (e) {
+      // Silently fail - initialize with 0 counts
+      for (final job in _jobs) {
+        _viewCounts.putIfAbsent(job.comments, () => 0);
+      }
+      // Notify listeners
+      notifyListeners();
+    }
+  }
+
+  /// Get view count for a specific job
+  int getViewCount(final String jobComments) {
+    return _viewCounts[jobComments] ?? 0;
+  }
+
+  /// Increment view count for a job
+  Future<void> incrementViewCount(final String jobComments) async {
+    try {
+      // Update local count immediately for better UX
+      _viewCounts[jobComments] = (_viewCounts[jobComments] ?? 0) + 1;
+      notifyListeners();
+
+      // Update Firebase in background (non-blocking) with debouncing
+      _debouncedFirebaseUpdate(jobComments);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  Timer? _firebaseUpdateTimer;
+  final Set<String> _pendingUpdates = {};
+
+  void _debouncedFirebaseUpdate(final String jobComments) {
+    _pendingUpdates.add(jobComments);
+
+    _firebaseUpdateTimer?.cancel();
+    _firebaseUpdateTimer = Timer(const Duration(seconds: 2), () {
+      if (_pendingUpdates.isNotEmpty) {
+        _batchUpdateViewCounts();
+      }
+    });
+  }
+
+  Future<void> _batchUpdateViewCounts() async {
+    if (_pendingUpdates.isEmpty) return;
+
+    final updates = List<String>.from(_pendingUpdates);
+    _pendingUpdates.clear();
+
+    try {
+      // Batch update all pending view counts
+      await ViewCountService.batchIncrementViewCounts(updates);
+    } catch (e) {
+      // Silently fail - local counts are already updated
+    }
+  }
+
+  /// Update view count for a specific job (used when loading from Firestore)
+  void updateViewCount(final String jobComments, final int viewCount) {
+    _viewCounts[jobComments] = viewCount;
+    notifyListeners();
+  }
+
+  /// Get jobs with updated view counts (optimized to avoid unnecessary object creation)
+  List<Job> get jobsWithViewCounts {
+    // Only recreate jobs if view counts have changed
+    if (_viewCounts.isEmpty) {
+      return _jobs;
+    }
+
+    return _jobs.map((final job) {
+      final viewCount = getViewCount(job.comments);
+      // Only create new job if view count is different
+      if (job.viewCount != viewCount) {
+        return Job(
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          salary: job.salary,
+          description: job.description,
+          requirements: job.requirements,
+          type: job.type,
+          experience: job.experience,
+          postedDate: job.postedDate,
+          closingDate: job.closingDate,
+          author: job.author,
+          jobId: job.jobId,
+          comments: job.comments,
+          applicantCode: job.applicantCode,
+          feedUrl: job.feedUrl,
+          publisher: job.publisher,
+          isRemote: job.isRemote,
+          skills: job.skills,
+          guid: job.guid,
+          isFavorite: job.isFavorite,
+          gradientColors: job.gradientColors,
+          viewCount: viewCount,
+        );
+      }
+      return job;
+    }).toList();
+  }
+
+  /// Get category jobs with updated view counts (optimized)
+  List<Job> get categoryJobsWithViewCounts {
+    // Only recreate jobs if view counts have changed
+    if (_viewCounts.isEmpty) {
+      return _categoryJobs;
+    }
+
+    return _categoryJobs.map((final job) {
+      final viewCount = getViewCount(job.comments);
+      // Only create new job if view count is different
+      if (job.viewCount != viewCount) {
+        return Job(
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          salary: job.salary,
+          description: job.description,
+          requirements: job.requirements,
+          type: job.type,
+          experience: job.experience,
+          postedDate: job.postedDate,
+          closingDate: job.closingDate,
+          author: job.author,
+          jobId: job.jobId,
+          comments: job.comments,
+          applicantCode: job.applicantCode,
+          feedUrl: job.feedUrl,
+          publisher: job.publisher,
+          isRemote: job.isRemote,
+          skills: job.skills,
+          guid: job.guid,
+          isFavorite: job.isFavorite,
+          gradientColors: job.gradientColors,
+          viewCount: viewCount,
+        );
+      }
+      return job;
+    }).toList();
+  }
+
+  /// Dispose resources
+  @override
+  void dispose() {
+    _viewCountSubscription?.cancel();
+    _searchTimer?.cancel();
+    _firebaseUpdateTimer?.cancel();
+    super.dispose();
   }
 }

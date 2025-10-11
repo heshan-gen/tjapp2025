@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "571388658309",
+    "project_id": "tj2025v2-1760036018623",
+    "storage_bucket": "tj2025v2-1760036018623.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:571388658309:android:0dd01748adc849bc5d5fec",
+        "android_client_info": {
+          "package_name": "lk.topjobs.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBStYa0LtVOJAb20H_EAaQm4wZ_4XLY12E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

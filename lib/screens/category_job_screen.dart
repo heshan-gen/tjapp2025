@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
@@ -94,7 +95,7 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
             );
           }
 
-          final categoryJobs = jobProvider.categoryJobs;
+          final categoryJobs = jobProvider.categoryJobsWithViewCounts;
 
           if (categoryJobs.isEmpty) {
             return Center(
@@ -401,7 +402,8 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                     const SizedBox(height: 6),
                     Consumer<JobProvider>(
                       builder: (final context, final jobProvider, final child) {
-                        final categoryJobs = jobProvider.categoryJobs;
+                        final categoryJobs =
+                            jobProvider.categoryJobsWithViewCounts;
                         return Container(
                           padding: const EdgeInsets.fromLTRB(
                             12,
@@ -517,6 +519,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
           ),
           child: InkWell(
             onTap: () {
+              // Increment view count when job is tapped
+              context.read<JobProvider>().incrementViewCount(job.comments);
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -562,13 +567,27 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                       ? ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(8),
-                                          child: Image.network(
-                                            'https://www.topjobs.lk/logo/${job.publisher}',
+                                          child: CachedNetworkImage(
+                                            imageUrl:
+                                                'https://www.topjobs.lk/logo/${job.publisher}',
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.fitWidth,
-                                            errorBuilder: (final context,
-                                                final error, final stackTrace) {
+                                            placeholder: (final context, final url) =>
+                                                Container(
+                                              width: 40,
+                                              height: 40,
+                                              color: Colors.grey[300],
+                                              child: Icon(
+                                                _getIconData(
+                                                    widget.category.icon),
+                                                color: Theme.of(context)
+                                                    .primaryColor,
+                                                size: 20,
+                                              ),
+                                            ),
+                                            errorWidget: (final context,
+                                                final url, final error) {
                                               return Icon(
                                                 _getIconData(
                                                     widget.category.icon),
@@ -738,6 +757,24 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                       style: TextStyle(
                                         color: _getClosingDateColor(
                                             job.closingDate!),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                  // View count (only show if > 0)
+                                  if (job.viewCount > 0) ...[
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.visibility,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${job.viewCount} views',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
                                       ),

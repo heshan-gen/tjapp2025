@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
@@ -94,7 +95,7 @@ class _JobListScreenState extends State<JobListScreen> {
                       Text(
                         jobProvider.isLoading || !_isListViewBuilt
                             ? 'Loading...'
-                            : '${jobProvider.jobs.length}',
+                            : '${jobProvider.jobsWithViewCounts.length}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -177,9 +178,9 @@ class _JobListScreenState extends State<JobListScreen> {
 
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: jobProvider.jobs.length,
+                  itemCount: jobProvider.jobsWithViewCounts.length,
                   itemBuilder: (final context, final index) {
-                    final job = jobProvider.jobs[index];
+                    final job = jobProvider.jobsWithViewCounts[index];
 
                     // Set flag to true after the first item is built
                     if (index == 0 && !_isListViewBuilt) {
@@ -273,13 +274,13 @@ class _JobListScreenState extends State<JobListScreen> {
                 if (mounted) {
                   setState(() {
                     if (_expandedCards.length ==
-                        context.read<JobProvider>().jobs.length) {
+                        context.read<JobProvider>().jobsWithViewCounts.length) {
                       _expandedCards.clear();
                     } else {
                       _expandedCards.addAll(
                         context
                             .read<JobProvider>()
-                            .jobs
+                            .jobsWithViewCounts
                             .map((final job) => job.comments),
                       );
                     }
@@ -404,6 +405,9 @@ class _JobListScreenState extends State<JobListScreen> {
           ),
           child: InkWell(
             onTap: () {
+              // Increment view count when job is tapped
+              context.read<JobProvider>().incrementViewCount(job.comments);
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -449,13 +453,25 @@ class _JobListScreenState extends State<JobListScreen> {
                                       ? ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(8),
-                                          child: Image.network(
-                                            'https://www.topjobs.lk/logo/${job.publisher}',
+                                          child: CachedNetworkImage(
+                                            imageUrl:
+                                                'https://www.topjobs.lk/logo/${job.publisher}',
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.fitWidth,
-                                            errorBuilder: (final context,
-                                                final error, final stackTrace) {
+                                            placeholder: (final context, final url) =>
+                                                Container(
+                                              width: 40,
+                                              height: 40,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.work,
+                                                color: Colors.grey,
+                                                size: 20,
+                                              ),
+                                            ),
+                                            errorWidget: (final context,
+                                                final url, final error) {
                                               return const Icon(
                                                 Icons.work,
                                                 color: Colors.white,
@@ -622,6 +638,24 @@ class _JobListScreenState extends State<JobListScreen> {
                                       style: TextStyle(
                                         color: _getClosingDateColor(
                                             job.closingDate!),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                  // View count (only show if > 0)
+                                  if (job.viewCount > 0) ...[
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.visibility,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${job.viewCount} views',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
                                       ),
