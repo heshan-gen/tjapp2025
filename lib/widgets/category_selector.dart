@@ -101,13 +101,14 @@ class _CategorySelectorState extends State<CategorySelector>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
             Text(
               'Job Categories',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.titleMedium?.color,
               ),
             ),
             // const SizedBox(width: 8),
@@ -173,9 +174,9 @@ class _CategorySelectorState extends State<CategorySelector>
                                 gradient: LinearGradient(
                                   colors: [
                                     categoryColor,
-                                    Colors.white,
-                                    Colors.white,
-                                    Colors.white
+                                    Theme.of(context).colorScheme.surface,
+                                    Theme.of(context).colorScheme.surface,
+                                    Theme.of(context).colorScheme.surface
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -189,16 +190,16 @@ class _CategorySelectorState extends State<CategorySelector>
                                   gradient: LinearGradient(
                                     colors: [
                                       categoryColor,
-                                      Colors.white,
-                                      Colors.white,
-                                      Colors.white,
-                                      Colors.white,
-                                      Colors.white
+                                      Theme.of(context).colorScheme.tertiary,
+                                      Theme.of(context).colorScheme.tertiary,
+                                      Theme.of(context).colorScheme.tertiary,
+                                      Theme.of(context).colorScheme.tertiary,
+                                      Theme.of(context).colorScheme.tertiary
                                     ],
                                     begin: Alignment.bottomRight,
                                     end: Alignment.topLeft,
                                   ),
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(
                                       7), // Slightly smaller radius
                                 ),
@@ -226,7 +227,10 @@ class _CategorySelectorState extends State<CategorySelector>
                                     Text(
                                       category.englisht,
                                       style: TextStyle(
-                                        color: Colors.grey[500],
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
                                         fontSize: 9,
                                       ),
                                       textAlign: TextAlign.center,

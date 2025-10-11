@@ -34,7 +34,7 @@ class _ImageViewerDialogState extends State<ImageViewerDialog> {
         fit: BoxFit.contain,
         errorBuilder: (final context, final error, final stackTrace) {
           return Container(
-            color: Colors.grey[200],
+            color: Theme.of(context).colorScheme.surface,
             child: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -61,7 +61,9 @@ class _ImageViewerDialogState extends State<ImageViewerDialog> {
           if (loadingProgress == null) return child;
           return Center(
             child: LoadingAnimationWidget.beat(
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Theme.of(context).primaryColor,
               size: 50,
             ),
           );

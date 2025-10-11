@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
+import '../providers/theme_provider.dart';
 import 'job_detail_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -57,6 +58,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (final context, final themeProvider, final child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeIcon),
+                tooltip: themeProvider.themeTooltip,
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
           Consumer<JobProvider>(
             builder: (final context, final jobProvider, final child) {
               final favoriteJobs = jobProvider.getFavoriteJobs();
@@ -93,14 +105,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   Icon(
                     Icons.favorite_border,
                     size: 80,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'No Favorite Jobs Yet',
                     style: TextStyle(
                       fontSize: 20,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -109,7 +121,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   Text(
                     'Swipe right on any job to add it to your favorites',
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
@@ -164,12 +176,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     },
                   )
                 : null,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(5),
+              borderSide:
+                  BorderSide(color: Theme.of(context).colorScheme.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(5),
+              borderSide:
+                  BorderSide(color: Theme.of(context).colorScheme.outline),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.black12),
+              borderRadius: BorderRadius.circular(5),
+              borderSide:
+                  BorderSide(color: Theme.of(context).colorScheme.outline),
             ),
             filled: true,
-            fillColor: Colors.grey[100],
+            fillColor: Theme.of(context).colorScheme.onBackground,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
@@ -222,7 +245,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         child: Card(
           elevation: 2,
-          color: Colors.white,
+          // color: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: InkWell(
             onTap: () {
               Navigator.push(
@@ -246,10 +272,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          // color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color.fromARGB(41, 100, 12, 12),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -260,7 +289,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   'https://www.topjobs.lk/logo/${job.publisher}',
                                   width: 50,
                                   height: 50,
-                                  fit: BoxFit.fitHeight,
+                                  fit: BoxFit.fitWidth,
                                   errorBuilder: (final context, final error,
                                       final stackTrace) {
                                     return Icon(
@@ -287,9 +316,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   .trim()
                                   .replaceAll(RegExp(r'\s+'), ' ')
                                   .replaceAll('?', '-'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.color,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -298,7 +331,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             Text(
                               job.company,
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.color,
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -353,14 +389,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       Icon(
                         Icons.location_on,
                         size: 16,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           job.location,
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -374,7 +410,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           child: Icon(
                             Icons.arrow_circle_right,
                             size: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -382,7 +418,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           child: Text(
                             job.description,
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color:
+                                  Theme.of(context).textTheme.bodySmall?.color,
                               fontSize: 12,
                             ),
                             maxLines: 1,
@@ -408,8 +445,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         child: Text(
                           job.type,
                           style: const TextStyle(
-                            color: Color(0xFF892621),
-                            fontSize: 12,
+                            color: Color(0xFFF0BE28),
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -429,7 +466,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             'Remote',
                             style: TextStyle(
                               color: Colors.green,
-                              fontSize: 12,
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -447,7 +484,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           _formatClosingDate(job.closingDate!),
                           style: TextStyle(
                             color: _getClosingDateColor(job.closingDate!),
-                            fontSize: 12,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -484,9 +521,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     if (difference.inDays < 0) {
       return Colors.grey;
-    } else if (difference.inDays == 0) {
+    } else if (difference.inDays < 3) {
       return Colors.red;
-    } else if (difference.inDays == 1) {
+    } else if (difference.inDays <= 5) {
       return Colors.orange;
     } else {
       return Colors.green;

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../providers/job_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/company_service.dart';
 import '../services/web_scraping_service.dart';
 import '../widgets/image_viewer_dialog.dart';
@@ -33,8 +34,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     // Use job's specific gradient colors if available, otherwise fallback to default
     if (widget.job.gradientColors.isNotEmpty) {
       return LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
         colors: widget.job.gradientColors,
       );
     }
@@ -129,21 +130,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFB00020),
-                Color(0xFFB00020),
-              ],
-            ),
+          decoration: BoxDecoration(
+            gradient: _getJobGradient(),
           ),
         ),
         title: const Text(
@@ -155,6 +149,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (final context, final themeProvider, final child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeIcon),
+                tooltip: themeProvider.themeTooltip,
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
           Consumer<JobProvider>(
             builder: (final context, final jobProvider, final child) {
               final isFavorite = jobProvider.isJobFavorite(widget.job.comments);
@@ -231,7 +236,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -257,12 +262,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         gradient: _getJobGradient(),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(15),
+          topRight: Radius.circular(15),
+          bottomRight: Radius.circular(15),
+          bottomLeft: Radius.circular(15),
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667EEA).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -274,42 +284,59 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 160,
-                  height: 70,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: widget.job.publisher.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            'https://www.topjobs.lk/logo/${widget.job.publisher}',
-                            width: 140,
-                            height: 70,
-                            fit: BoxFit.fitHeight,
-                            errorBuilder:
-                                (final context, final error, final stackTrace) {
-                              return const Icon(
+                widget.job.publisher == 'defzzz.gif'
+                    ? // Show only hot icon for defzzz.gif
+                    Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_fire_department,
+                          color: Colors.red,
+                          size: 32,
+                        ),
+                      )
+                    : Container(
+                        width: 160,
+                        height: 70,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: widget.job.publisher.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  'https://www.topjobs.lk/logo/${widget.job.publisher}',
+                                  width: 140,
+                                  height: 70,
+                                  fit: BoxFit.fitHeight,
+                                  errorBuilder: (final context, final error,
+                                      final stackTrace) {
+                                    return const Icon(
+                                      Icons.work,
+                                      color: Colors.white,
+                                      size: 35,
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
                                 Icons.work,
                                 color: Colors.white,
                                 size: 35,
-                              );
-                            },
-                          ),
-                        )
-                      : const Icon(
-                          Icons.work,
-                          color: Colors.white,
-                          size: 35,
-                        ),
-                ),
+                              ),
+                      ),
                 const SizedBox(height: 16),
                 Text(
                   widget.job.title
@@ -384,13 +411,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   children: [
                     _buildBadge(
                       text: widget.job.type,
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       backgroundColor: Colors.white.withOpacity(0.2),
                     ),
                     const SizedBox(width: 8),
                     _buildBadge(
                       text: widget.job.experience,
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       backgroundColor: Colors.white.withOpacity(0.2),
                     ),
                   ],
@@ -458,8 +485,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         children: [
           Text(
             text,
-            style: TextStyle(
-              color: color,
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
@@ -473,7 +500,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -493,22 +520,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2B12BD).withOpacity(0.1),
+                    color: const Color(0xFF0DA2DD).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: const Icon(
                     Icons.business,
-                    color: Color(0xFF2B12BD),
+                    color: Color(0xFF0DA2DD),
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Job Information',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -614,7 +641,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ),
             child: Icon(
               icon,
-              color: const Color.fromARGB(255, 51, 51, 51),
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               size: 14,
             ),
           ),
@@ -626,19 +653,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w400,
-                    color: Color.fromARGB(255, 71, 90, 116),
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                     fontSize: 11,
                   ),
                 ),
                 const SizedBox(height: 0),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 34, 58, 94),
+                    color: Theme.of(context).textTheme.titleSmall?.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -655,7 +682,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -685,12 +712,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Job Description',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -712,10 +739,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   // Show original description first
                   Text(
                     widget.job.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       height: 1.6,
-                      color: Color(0xFF475569),
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
                   ),
 
@@ -726,7 +753,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: LoadingAnimationWidget.beat(
-                          color: Theme.of(context).primaryColor,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Theme.of(context).primaryColor,
                           size: 50,
                         ),
                       ),
@@ -790,16 +819,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     //   style: TextStyle(
                     //     fontSize: 14,
                     //     fontWeight: FontWeight.bold,
-                    //     color: Color(0xFF1E293B),
+                    //     color: Theme.of(context).textTheme.titleMedium?.color,
                     //   ),
                     // ),
                     // const SizedBox(height: 8),
                     Text(
                       _scrapedContent!.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.6,
-                        color: Color(0xFF475569),
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
 
@@ -811,7 +840,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       //   style: TextStyle(
                       //     fontSize: 14,
                       //     fontWeight: FontWeight.bold,
-                      //     color: Color(0xFF1E293B),
+                      //     color: Theme.of(context).textTheme.titleMedium?.color,
                       //   ),
                       // ),
                       const SizedBox(height: 8),
@@ -842,7 +871,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                         return Container(
                                           height: 200,
                                           decoration: BoxDecoration(
-                                            color: Colors.grey[200],
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surface,
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
@@ -896,7 +927,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -926,12 +957,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Requirements',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -939,10 +970,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 16),
             Text(
               widget.job.requirements,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 height: 1.6,
-                color: Color(0xFF475569),
+                color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           ],
@@ -955,7 +986,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -985,12 +1016,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Required Skills',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -1042,7 +1073,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -1072,12 +1103,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'About Company',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -1121,10 +1152,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           widget.job.company
                               .trim()
                               .replaceAll(RegExp(r'\s+'), ' '),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color:
+                                Theme.of(context).textTheme.titleLarge?.color,
                           ),
                         ),
                       ],
@@ -1139,7 +1171,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: LoadingAnimationWidget.beat(
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Theme.of(context).primaryColor,
                     size: 50,
                   ),
                 ),
@@ -1147,9 +1181,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             else
               Text(
                 _companyInfo ?? 'About Company',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF0F172A),
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                   height: 1.5,
                 ),
               ),
@@ -1279,17 +1313,24 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     try {
       // Check if there are images available to share
       if (_scrapedContent != null && _scrapedContent!.imageUrls.isNotEmpty) {
-        // Download the first image and share it with text
-        final String imageUrl = _scrapedContent!.imageUrls.first;
-        final File? imageFile = await _downloadImage(imageUrl);
+        // Try to download image with timeout to avoid long delays
+        try {
+          final String imageUrl = _scrapedContent!.imageUrls.first;
+          final File? imageFile = await _downloadImageWithTimeout(imageUrl);
 
-        if (imageFile != null) {
-          await Share.shareXFiles(
-            [XFile(imageFile.path)],
-            text: shareText,
-          );
-        } else {
-          // Fallback to text-only sharing if image download fails
+          if (imageFile != null) {
+            // Share with image and text
+            await Share.shareXFiles(
+              [XFile(imageFile.path)],
+              text: shareText,
+            );
+          } else {
+            // Fallback to text-only sharing if image download fails
+            await Share.share(shareText);
+          }
+        } catch (e) {
+          // If image download times out or fails, share text only
+          print('Image download failed, sharing text only: $e');
           await Share.share(shareText);
         }
       } else {
@@ -1298,12 +1339,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       }
     } catch (e) {
       print('Error sharing job: $e');
-      // Fallback to text-only sharing on error
-      try {
-        await Share.share(shareText);
-      } catch (fallbackError) {
-        print('Error in fallback sharing: $fallbackError');
-      }
+    }
+  }
+
+  // Download image with timeout to prevent long delays
+  Future<File?> _downloadImageWithTimeout(final String imageUrl) async {
+    try {
+      return await Future.any([
+        _downloadImage(imageUrl),
+        Future.delayed(const Duration(seconds: 5), () => null),
+      ]);
+    } catch (e) {
+      print('Image download timeout or error: $e');
+      return null;
     }
   }
 
@@ -1347,19 +1395,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
                 side: BorderSide.none,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.share_outlined,
-                    color: Color(0xFF64748B),
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                     size: 18,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'Share',
                     style: TextStyle(
-                      color: Color(0xFF64748B),
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

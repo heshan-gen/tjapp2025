@@ -116,44 +116,57 @@ class _BannerSliderState extends State<BannerSlider> {
             },
           ),
         ),
-        if (bannerItems.length > 1) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              bannerItems.length,
-              (final index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentIndex == index
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey[300],
-                ),
-              ),
-            ),
-          ),
-        ],
+        // if (bannerItems.length > 1) ...[
+        //   const SizedBox(height: 8),
+        //   Row(
+        //     mainAxisAlignment: MainAxisAlignment.center,
+        //     children: List.generate(
+        //       bannerItems.length,
+        //       (final index) => Container(
+        //         margin: const EdgeInsets.symmetric(horizontal: 2),
+        //         width: 5,
+        //         height: 5,
+        //         decoration: BoxDecoration(
+        //           shape: BoxShape.circle,
+        //           color: _currentIndex == index
+        //               ? Theme.of(context).primaryColor
+        //               : Colors.grey[300],
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // ],
       ],
     );
   }
 
   Widget _buildWelcomeBanner(final BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor,
-            // ignore: deprecated_member_use
-            Theme.of(context).primaryColor.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: isDarkMode
+            ? LinearGradient(
+                colors: [
+                  const Color.fromARGB(255, 43, 42, 42),
+                  const Color.fromARGB(255, 43, 42, 42),
+                  const Color.fromARGB(255, 43, 42, 42),
+                  Colors.grey[700]!,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [
+                  Theme.of(context).primaryColor,
+                  // ignore: deprecated_member_use
+                  Theme.of(context).primaryColor.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(widget.borderRadius),
       ),
       child: Column(
@@ -188,7 +201,7 @@ class _BannerSliderState extends State<BannerSlider> {
               child: Text(
                 '${widget.jobCount} jobs available',
                 style: const TextStyle(
-                  color: Color(0xFF892621),
+                  color: Color.fromARGB(255, 0, 0, 0),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

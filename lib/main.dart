@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/job_list_screen.dart';
 import 'screens/favorites_screen.dart';
+import 'screens/contact_us_screen.dart';
 import 'providers/job_provider.dart';
 import 'providers/banner_provider.dart';
+import 'providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_navigation_widget.dart';
 
@@ -31,18 +33,24 @@ class TopJobsApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (final _) => BannerProvider()),
+        ChangeNotifierProvider(create: (final _) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'topjobs',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const MainNavigationScreen(),
-        routes: {
-          '/home': (final context) => const HomeScreen(),
-          '/jobs': (final context) => const JobListScreen(),
-          '/favorites': (final context) => const FavoritesScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (final context, final themeProvider, final child) {
+          return MaterialApp(
+            title: 'topjobs',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const MainNavigationScreen(),
+            routes: {
+              '/home': (final context) => const HomeScreen(),
+              '/jobs': (final context) => const JobListScreen(),
+              '/favorites': (final context) => const FavoritesScreen(),
+              '/contact': (final context) => const ContactUsScreen(),
+            },
+          );
         },
       ),
     );
@@ -63,6 +71,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const HomeScreen(),
     const JobListScreen(),
     const FavoritesScreen(),
+    const ContactUsScreen(),
   ];
 
   @override

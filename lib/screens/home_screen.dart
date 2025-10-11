@@ -6,6 +6,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/banner_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/banner_slider.dart';
 import 'job_detail_screen.dart';
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startMessageRotation() {
-    _messageTimer = Timer.periodic(const Duration(seconds: 5), (final timer) {
+    _messageTimer = Timer.periodic(const Duration(seconds: 10), (final timer) {
       if (mounted) {
         setState(() {
           _currentMessageIndex =
@@ -77,14 +78,19 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.normal,
           ),
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.search),
-        //     onPressed: () {
-        //       //
-        //     },
-        //   ),
-        // ],
+        actions: [
+          Consumer<ThemeProvider>(
+            builder: (final context, final themeProvider, final child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeIcon),
+                tooltip: themeProvider.themeTooltip,
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: Consumer<JobProvider>(
         builder: (final context, final jobProvider, final child) {
@@ -103,18 +109,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   LoadingAnimationWidget.beat(
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Theme.of(context).primaryColor,
                     size: 50,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 30),
                   TypewriterText(
                     key: ValueKey(_currentMessageIndex),
                     text: _loadingMessages[_currentMessageIndex],
                     duration: const Duration(milliseconds: 80),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.normal,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                 ],
@@ -128,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildWelcomeSection(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 10),
                 const CategorySelector(),
                 const SizedBox(height: 24),
                 _buildSearchBarWithExpandButton(),
@@ -150,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final child) {
         return BannerSlider(
           banners: bannerProvider.banners,
-          height: 170.0,
+          height: 160.0,
           borderRadius: 10.0,
           jobCount: jobProvider.jobs.length,
         );
@@ -162,11 +170,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Search Jobs',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleMedium?.color,
           ),
         ),
         const SizedBox(height: 5),
@@ -178,9 +187,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Job title, company, or skills...',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
+                      color: Theme.of(context).hintColor,
                     ),
                     prefixIcon: const Icon(Icons.search),
                     prefixStyle: const TextStyle(
@@ -189,18 +199,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.grey),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.grey),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.grey),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline),
                     ),
                     filled: true,
-                    fillColor: const Color.fromARGB(255, 255, 255, 255),
+                    fillColor: Theme.of(context).colorScheme.onBackground,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -219,12 +232,12 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 48,
               width: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF892621),
+                color: const Color.fromARGB(255, 255, 192, 20),
                 borderRadius: BorderRadius.circular(5),
               ),
               child: IconButton(
                 icon: const Icon(Icons.expand_rounded,
-                    size: 20, color: Colors.white),
+                    size: 20, color: Colors.black),
                 onPressed: () {
                   // Toggle all cards expansion
                   if (mounted) {
@@ -265,11 +278,12 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               'Hot Jobs',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.titleMedium?.color,
               ),
             ),
             const SizedBox(width: 8),
@@ -293,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         SizedBox(
           height: _expandedCards.isNotEmpty
-              ? 150
+              ? 140
               : 95, // Dynamic height based on expansion state
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -340,13 +354,14 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
                 Text(
                   'Recent Jobs',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
               ],
@@ -366,10 +381,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('View All',
+              child: Text('View All',
                   style: TextStyle(
                       fontSize: 12,
-                      color: Colors.black,
+                      color: Theme.of(context).textTheme.labelLarge?.color,
                       fontWeight: FontWeight.w500)),
             ),
           ],
@@ -398,7 +413,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Card(
         elevation: 2,
-        color: Colors.white,
+        // color: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -408,7 +426,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -431,11 +449,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  // color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color:
-                                        const Color.fromARGB(41, 100, 12, 12),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline
+                                        .withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -471,9 +491,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           .trim()
                                           .replaceAll(RegExp(r'\s+'), ' ')
                                           .replaceAll('?', '-'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.color,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -483,7 +507,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                           .trim()
                                           .replaceAll(RegExp(r'\s+'), ' '),
                                       style: TextStyle(
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
                                         fontSize: 12,
                                       ),
                                       maxLines: 1,
@@ -502,14 +529,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.location_on,
                                   size: 16,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color,
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     job.location,
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -518,14 +551,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.arrow_circle_right,
                                   size: 16,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     job.description,
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
                                       fontSize: 12,
                                     ),
                                     maxLines: 1,
@@ -552,32 +591,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Text(
                                     job.type,
                                     style: const TextStyle(
-                                      color: Color(0xFF892621),
-                                      fontSize: 12,
+                                      color: Color(0xFFF0BE28),
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
-                                // Closing Date right next to job type
-                                if (job.closingDate != null) ...[
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.schedule,
-                                    size: 16,
-                                    color:
-                                        _getClosingDateColor(job.closingDate!),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatClosingDate(job.closingDate!),
-                                    style: TextStyle(
-                                      color: _getClosingDateColor(
-                                          job.closingDate!),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+
                                 // Remote indicator after closing date
                                 if (job.isRemote) ...[
                                   const SizedBox(width: 8),
@@ -595,9 +615,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                       'Remote',
                                       style: TextStyle(
                                         color: Colors.green,
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w500,
                                       ),
+                                    ),
+                                  ),
+                                ],
+                                // Closing Date right next to job type
+                                if (job.closingDate != null) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color:
+                                        _getClosingDateColor(job.closingDate!),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _formatClosingDate(job.closingDate!),
+                                    style: TextStyle(
+                                      color: _getClosingDateColor(
+                                          job.closingDate!),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
@@ -634,7 +674,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               isExpanded
                                   ? Icons.expand_less
                                   : Icons.expand_more,
-                              color: Colors.grey[600],
+                              color:
+                                  Theme.of(context).textTheme.bodySmall?.color,
                               size: 16,
                             ),
                           ),
@@ -682,7 +723,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       : Icons.favorite_border,
                                   color: isFavorite
                                       ? Colors.red
-                                      : Colors.grey[400],
+                                      : Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
                                   size: 16,
                                 ),
                               ),
@@ -728,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (difference.inDays == 1) {
       return 'Closes in 1 day';
     } else {
-      return 'Closes in ${difference.inDays} days';
+      return '${difference.inDays} days';
     }
   }
 
@@ -738,9 +782,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (difference.inDays < 0) {
       return Colors.grey;
-    } else if (difference.inDays == 0) {
+    } else if (difference.inDays < 3) {
       return Colors.red;
-    } else if (difference.inDays == 1) {
+    } else if (difference.inDays <= 5) {
       return Colors.orange;
     } else {
       return Colors.green;
@@ -911,18 +955,18 @@ class _TypewriterTextState extends State<TypewriterText> {
       textAlign: widget.textAlign,
       text: TextSpan(
         style: widget.style ??
-            const TextStyle(
+            TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
         children: [
           TextSpan(text: _displayText),
           if (_showCursor && _currentIndex < widget.text.length)
-            const TextSpan(
+            TextSpan(
               text: '|',
               style: TextStyle(
-                color: Colors.grey,
+                color: Theme.of(context).textTheme.bodySmall?.color,
                 fontWeight: FontWeight.bold,
               ),
             ),

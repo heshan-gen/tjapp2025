@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../providers/job_provider.dart';
+import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
 import '../services/color_service.dart';
 import 'job_detail_screen.dart';
@@ -63,6 +64,17 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (final context, final themeProvider, final child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeIcon),
+                tooltip: themeProvider.themeTooltip,
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterBottomSheet,
@@ -74,7 +86,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
           if (jobProvider.isLoading) {
             return Center(
               child: LoadingAnimationWidget.beat(
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Theme.of(context).primaryColor,
                 size: 50,
               ),
             );
@@ -90,14 +104,14 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                   Icon(
                     _getIconData(widget.category.icon),
                     size: 64,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No jobs found in ${widget.category.englisht}',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -106,7 +120,7 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                   Text(
                     'Jobs from this category will appear here when available',
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
@@ -234,20 +248,20 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
                     borderSide: BorderSide(
-                        color: widget.categoryColor.withOpacity(0.5)),
+                        color: Theme.of(context).colorScheme.outline),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
                     borderSide: BorderSide(
-                        color: widget.categoryColor.withOpacity(0.5)),
+                        color: Theme.of(context).colorScheme.outline),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
                     borderSide: BorderSide(
-                        color: widget.categoryColor.withOpacity(0.5)),
+                        color: Theme.of(context).colorScheme.outline),
                   ),
                   filled: true,
-                  fillColor: widget.categoryColor.withOpacity(0.1),
+                  fillColor: Theme.of(context).colorScheme.onBackground,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
@@ -331,12 +345,16 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Icon(
                   _getIconData(widget.category.icon),
-                  color: widget.categoryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : widget.categoryColor,
                   size: 20,
                 ),
               ),
@@ -345,12 +363,14 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Switch Category',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -359,14 +379,19 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                         text: 'Currently viewing: ',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withOpacity(0.7)
+                              : Colors.white.withOpacity(0.7),
                         ),
                         children: [
                           TextSpan(
                             text: widget.category.minititle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -486,7 +511,10 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
         ),
         child: Card(
           elevation: 2,
-          color: Colors.white,
+          // color: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: InkWell(
             onTap: () {
               Navigator.push(
@@ -519,11 +547,14 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    // color:
+                                    //     Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color:
-                                          const Color.fromARGB(41, 100, 12, 12),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withOpacity(0.3),
                                       width: 1,
                                     ),
                                   ),
@@ -565,9 +596,13 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                             .trim()
                                             .replaceAll(RegExp(r'\s+'), ' ')
                                             .replaceAll('?', '-'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.color,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -577,7 +612,10 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                             .trim()
                                             .replaceAll(RegExp(r'\s+'), ' '),
                                         style: TextStyle(
-                                          color: Colors.grey[600],
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color,
                                           fontSize: 12,
                                         ),
                                         maxLines: 1,
@@ -596,14 +634,20 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                   Icon(
                                     Icons.location_on,
                                     size: 16,
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
                                       job.location,
                                       style: TextStyle(
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -612,14 +656,20 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                   Icon(
                                     Icons.arrow_circle_right,
                                     size: 16,
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       job.description,
                                       style: TextStyle(
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
                                         fontSize: 12,
                                       ),
                                       maxLines: 1,
@@ -645,32 +695,12 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                     child: Text(
                                       job.type,
                                       style: const TextStyle(
-                                        color: Color(0xFF892621),
-                                        fontSize: 12,
+                                        color: Color(0xFFF0BE28),
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),
-                                  // Closing Date right next to job type
-                                  if (job.closingDate != null) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.schedule,
-                                      size: 16,
-                                      color: _getClosingDateColor(
-                                          job.closingDate!),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatClosingDate(job.closingDate!),
-                                      style: TextStyle(
-                                        color: _getClosingDateColor(
-                                            job.closingDate!),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
                                   // Remote indicator after closing date
                                   if (job.isRemote) ...[
                                     const SizedBox(width: 8),
@@ -687,9 +717,29 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                         'Remote',
                                         style: TextStyle(
                                           color: Colors.green,
-                                          fontSize: 12,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w500,
                                         ),
+                                      ),
+                                    ),
+                                  ],
+                                  // Closing Date right next to job type
+                                  if (job.closingDate != null) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.schedule,
+                                      size: 16,
+                                      color: _getClosingDateColor(
+                                          job.closingDate!),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatClosingDate(job.closingDate!),
+                                      style: TextStyle(
+                                        color: _getClosingDateColor(
+                                            job.closingDate!),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ],
@@ -726,7 +776,10 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                 isExpanded
                                     ? Icons.expand_less
                                     : Icons.expand_more,
-                                color: Colors.grey[600],
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.color,
                                 size: 16,
                               ),
                             ),
@@ -775,7 +828,10 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                         : Icons.favorite_border,
                                     color: isFavorite
                                         ? Colors.red
-                                        : Colors.grey[400],
+                                        : Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color,
                                     size: 16,
                                   ),
                                 ),
@@ -816,9 +872,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
 
     if (difference.inDays < 0) {
       return Colors.grey;
-    } else if (difference.inDays == 0) {
+    } else if (difference.inDays < 3) {
       return Colors.red;
-    } else if (difference.inDays == 1) {
+    } else if (difference.inDays <= 5) {
       return Colors.orange;
     } else {
       return Colors.green;
@@ -929,9 +985,9 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
@@ -944,7 +1000,7 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: Theme.of(context).textTheme.bodySmall?.color,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -959,12 +1015,16 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.1)
+                            : Theme.of(context).primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.category_outlined,
-                        color: Theme.of(context).primaryColor,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Theme.of(context).primaryColor,
                         size: 22,
                       ),
                     ),
@@ -978,7 +1038,8 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
+                              color:
+                                  Theme.of(context).textTheme.titleLarge?.color,
                             ),
                           ),
                           RichText(
@@ -986,7 +1047,10 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                               text: 'Currently viewing: ',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.color,
                               ),
                               children: [
                                 TextSpan(
@@ -1008,7 +1072,7 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1022,22 +1086,28 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                 // Search bar
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outline),
                   ),
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search categories...',
                       hintStyle: TextStyle(
-                        color: Colors.grey[500],
+                        color: Theme.of(context).hintColor,
                         fontSize: 14,
                       ),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+                      prefixIcon: Icon(Icons.search,
+                          color: Theme.of(context).textTheme.bodySmall?.color),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey[500]),
+                              icon: Icon(Icons.clear,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color),
                               onPressed: () {
                                 _searchController.clear();
                                 if (mounted) {
@@ -1152,7 +1222,10 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                               Text(
                                 category.englisht,
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color,
                                   fontSize: 10,
                                 ),
                                 textAlign: TextAlign.center,
@@ -1304,9 +1377,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
+                  border:
+                      Border.all(color: Theme.of(context).colorScheme.outline),
                   borderRadius: BorderRadius.circular(6),
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -1330,8 +1404,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                                 value: location,
                                 child: Text(
                                   location,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.black),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.color),
                                 ),
                               )),
                     ],
