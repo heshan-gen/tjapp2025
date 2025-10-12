@@ -57,7 +57,7 @@ class AppTheme {
         seedColor: primaryColor,
         brightness: Brightness.light,
         primary: primaryColor,
-        secondary: secondaryColor,
+        secondary: const Color(0xFFF0BE28),
         surface: const Color.fromARGB(255, 246, 251, 255),
         error: errorColor,
         onBackground: Colors.white,

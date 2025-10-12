@@ -1,11 +1,13 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../providers/theme_provider.dart';
 import '../services/email_service.dart';
 import '../theme/app_theme.dart';
@@ -774,13 +776,12 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Center(
                       child: _isSubmitting
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              child: LoadingAnimationWidget.beat(
+                                color: Colors.white,
+                                size: 20,
                               ),
                             )
                           : Row(
@@ -1149,7 +1150,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'App Support',
+                  'Applicant Support',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDarkMode ? Colors.white : Colors.grey[800],
@@ -1159,10 +1160,13 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             ),
             const SizedBox(height: 16),
             if (_isLoadingContactNumbers)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
+                  padding: const EdgeInsets.all(20),
+                  child: LoadingAnimationWidget.beat(
+                    color: Colors.blue,
+                    size: 50,
+                  ),
                 ),
               )
             else if (_contactNumbers?.appSupport.isNotEmpty ?? false)
@@ -1213,15 +1217,24 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             ),
             const SizedBox(height: 16),
             if (_isLoadingContactNumbers)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
+                  padding: const EdgeInsets.all(20),
+                  child: LoadingAnimationWidget.beat(
+                    color: Colors.blue,
+                    size: 50,
+                  ),
                 ),
               )
             else if (_contactNumbers?.salesNumbers.isNotEmpty ?? false)
-              ..._contactNumbers!.salesNumbers
-                  .map((final sales) => _buildSalesItem(sales))
+              ...() {
+                // Create a shuffled copy of the sales numbers list
+                final shuffledSalesNumbers =
+                    List<SalesNumber>.from(_contactNumbers!.salesNumbers);
+                shuffledSalesNumbers.shuffle(Random());
+                return shuffledSalesNumbers
+                    .map((final sales) => _buildSalesItem(sales));
+              }()
             else
               Text(
                 'No sales contacts available',

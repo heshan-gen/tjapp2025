@@ -130,9 +130,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.favorite_border,
+                    Icons.heart_broken_sharp,
                     size: 80,
-                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFFF0BE28)
+                        : Theme.of(context).primaryColor,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -389,6 +391,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                     isFavorite
                                         ? 'Removed from favorites'
                                         : 'Added to favorites',
+                                  ),
+                                  backgroundColor: isFavorite
+                                      ? const Color.fromARGB(255, 252, 144, 12)
+                                      : const Color.fromARGB(255, 5, 177, 56),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
                                   ),
                                   duration: const Duration(seconds: 2),
                                 ),

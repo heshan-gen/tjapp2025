@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use, duplicate_ignore
 
-import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
+import '../widgets/modern_loading_modal.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/banner_provider.dart';
@@ -20,51 +20,35 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentMessageIndex = 0;
-  Timer? _messageTimer;
   final Set<String> _expandedCards = <String>{};
-
-  final List<String> _loadingMessages = [
-    'Bringing you closer to your next big role...',
-    'Exploring top career paths tailored for you...',
-    'Opening doors to new career possibilities...',
-  ];
+  Color? _randomHotJobColor;
 
   @override
   void initState() {
     super.initState();
+    _randomHotJobColor = _generateRandomColor();
     WidgetsBinding.instance.addPostFrameCallback((final _) {
       if (mounted) {
         context.read<JobProvider>().loadJobs();
         context.read<BannerProvider>().loadBanners();
       }
     });
-    _startMessageRotation();
   }
 
   @override
   void dispose() {
-    _messageTimer?.cancel();
-    _messageTimer = null;
     super.dispose();
   }
 
-  void _startMessageRotation() {
-    _messageTimer = Timer.periodic(const Duration(seconds: 10), (final timer) {
-      if (mounted) {
-        setState(() {
-          _currentMessageIndex =
-              (_currentMessageIndex + 1) % _loadingMessages.length;
-          print(
-              'DEBUG: Message changed to index $_currentMessageIndex: ${_loadingMessages[_currentMessageIndex]}');
-        });
-      }
-    });
-  }
-
-  void _stopMessageRotation() {
-    _messageTimer?.cancel();
-    _messageTimer = null;
+  Color _generateRandomColor() {
+    final Random random = Random();
+    // Generate a random pastel color with good contrast for white text
+    return Color.fromARGB(
+      255,
+      random.nextInt(80) + 100, // Red: 100-179 (pastel range)
+      random.nextInt(80) + 100, // Green: 100-179 (pastel range)
+      random.nextInt(80) + 100, // Blue: 100-179 (pastel range)
+    );
   }
 
   @override
@@ -95,38 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Consumer<JobProvider>(
         builder: (final context, final jobProvider, final child) {
-          // Stop message rotation when loading is complete
-          if (!jobProvider.isLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((final _) {
-              if (mounted) {
-                _stopMessageRotation();
-              }
-            });
-          }
-
           if (jobProvider.isLoading) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  LoadingAnimationWidget.beat(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Theme.of(context).primaryColor,
-                    size: 50,
-                  ),
-                  const SizedBox(height: 30),
-                  TypewriterText(
-                    key: ValueKey(_currentMessageIndex),
-                    text: _loadingMessages[_currentMessageIndex],
-                    duration: const Duration(milliseconds: 80),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                  ),
-                ],
+              child: JobLoadingModal(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Theme.of(context).primaryColor,
               ),
             );
           }
@@ -318,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: hotJobs.length,
             itemBuilder: (final context, final index) {
               final job = hotJobs[index];
-              return _buildJobCard(job, isHot: true);
+              return _buildJobCard(job, isHot: true, isFirstHotJob: index == 0);
             },
           ),
         ),
@@ -406,18 +364,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildJobCard(final Job job, {final bool isHot = false}) {
+  Widget _buildJobCard(final Job job,
+      {final bool isHot = false, final bool isFirstHotJob = false}) {
     final isExpanded = _expandedCards.contains(job.comments);
 
     return Container(
-      width: isHot ? 300 : double.infinity,
+      width: isHot ? 320 : double.infinity,
       margin: EdgeInsets.only(
         right: isHot ? 5 : 0,
         bottom: 5,
       ),
       child: Card(
         elevation: 2,
-        // color: Theme.of(context).cardColor,
+        color: isFirstHotJob
+            ? (_randomHotJobColor ?? const Color.fromARGB(255, 138, 14, 5))
+            : null,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -458,11 +419,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 decoration: BoxDecoration(
                                   // color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(8),
+                                  color: isFirstHotJob
+                                      ? Colors.white
+                                      : Theme.of(context).cardColor,
                                   border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline
-                                        .withOpacity(0.3),
+                                    color: isFirstHotJob
+                                        ? Colors.white
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .outline
+                                            .withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -501,10 +467,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.color,
+                                        color: isFirstHotJob
+                                            ? Colors.white
+                                            : Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.color,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -514,10 +482,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                           .trim()
                                           .replaceAll(RegExp(r'\s+'), ' '),
                                       style: TextStyle(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color,
+                                        color: isFirstHotJob
+                                            ? Colors.white.withOpacity(0.9)
+                                            : Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.color,
                                         fontSize: 12,
                                       ),
                                       maxLines: 1,
@@ -536,20 +506,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.location_on,
                                   size: 16,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color,
+                                  color: isFirstHotJob
+                                      ? Colors.white
+                                      : Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     job.location,
                                     style: TextStyle(
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
+                                      color: isFirstHotJob
+                                          ? Colors.white
+                                          : Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -558,20 +532,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.arrow_circle_right,
                                   size: 16,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color,
+                                  color: isFirstHotJob
+                                      ? Colors.white
+                                      : Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     job.description,
                                     style: TextStyle(
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
+                                      color: isFirstHotJob
+                                          ? Colors.white
+                                          : Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color,
                                       fontSize: 12,
                                     ),
                                     maxLines: 1,
@@ -591,14 +569,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     // ignore: deprecated_member_use
-                                    color: const Color(0xFFF0BE28)
-                                        .withOpacity(0.2),
+                                    color: isFirstHotJob
+                                        ? Colors.white.withOpacity(0.2)
+                                        : const Color(0xFFF0BE28)
+                                            .withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     job.type,
-                                    style: const TextStyle(
-                                      color: Color(0xFFF0BE28),
+                                    style: TextStyle(
+                                      color: isFirstHotJob
+                                          ? Colors.white
+                                          : const Color(0xFFF0BE28),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -615,13 +597,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       // ignore: deprecated_member_use
-                                      color: Colors.green.withOpacity(0.1),
+                                      color: isFirstHotJob
+                                          ? Colors.white.withOpacity(0.1)
+                                          : Colors.green.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'Remote',
                                       style: TextStyle(
-                                        color: Colors.green,
+                                        color: isFirstHotJob
+                                            ? Colors.white
+                                            : Colors.green,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -634,15 +620,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.schedule,
                                     size: 16,
-                                    color:
-                                        _getClosingDateColor(job.closingDate!),
+                                    color: isFirstHotJob
+                                        ? Colors.white
+                                        : _getClosingDateColor(
+                                            job.closingDate!),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     _formatClosingDate(job.closingDate!),
                                     style: TextStyle(
-                                      color: _getClosingDateColor(
-                                          job.closingDate!),
+                                      color: isFirstHotJob
+                                          ? Colors.white
+                                          : _getClosingDateColor(
+                                              job.closingDate!),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -651,16 +641,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // View count (only show if > 0)
                                 if (job.viewCount > 0) ...[
                                   const SizedBox(width: 8),
-                                  const Icon(
+                                  Icon(
                                     Icons.visibility,
                                     size: 16,
-                                    color: Colors.blue,
+                                    color: isFirstHotJob
+                                        ? Colors.white
+                                        : Colors.blue,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${job.viewCount} views',
-                                    style: const TextStyle(
-                                      color: Colors.blue,
+                                    style: TextStyle(
+                                      color: isFirstHotJob
+                                          ? Colors.white
+                                          : Colors.blue,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -699,8 +693,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               isExpanded
                                   ? Icons.expand_less
                                   : Icons.expand_more,
-                              color:
-                                  Theme.of(context).textTheme.bodySmall?.color,
+                              color: isFirstHotJob
+                                  ? Colors.white
+                                  : Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color,
                               size: 16,
                             ),
                           ),
@@ -748,10 +746,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       : Icons.favorite_border,
                                   color: isFavorite
                                       ? Colors.red
-                                      : Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
+                                      : isFirstHotJob
+                                          ? Colors.white
+                                          : Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.color,
                                   size: 16,
                                 ),
                               ),
@@ -886,119 +886,5 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return 'General';
     }
-  }
-}
-
-class TypewriterText extends StatefulWidget {
-  final String text;
-  final Duration duration;
-  final TextStyle? style;
-  final TextAlign textAlign;
-
-  const TypewriterText({
-    super.key,
-    required this.text,
-    this.duration = const Duration(milliseconds: 50),
-    this.style,
-    this.textAlign = TextAlign.center,
-  });
-
-  @override
-  State<TypewriterText> createState() => _TypewriterTextState();
-}
-
-class _TypewriterTextState extends State<TypewriterText> {
-  String _displayText = '';
-  int _currentIndex = 0;
-  Timer? _timer;
-  bool _showCursor = true;
-  Timer? _cursorTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTyping();
-    _startCursorBlink();
-  }
-
-  @override
-  void didUpdateWidget(final TypewriterText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
-      print('DEBUG: TypewriterText received new text: ${widget.text}');
-      _resetTyping();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _cursorTimer?.cancel();
-    _timer = null;
-    _cursorTimer = null;
-    super.dispose();
-  }
-
-  void _resetTyping() {
-    print('DEBUG: Resetting typewriter animation');
-    _timer?.cancel();
-    _currentIndex = 0;
-    _displayText = '';
-    _startTyping();
-  }
-
-  void _startTyping() {
-    _timer = Timer.periodic(widget.duration, (final timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      if (_currentIndex < widget.text.length) {
-        setState(() {
-          _displayText = widget.text.substring(0, _currentIndex + 1);
-          _currentIndex++;
-        });
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  void _startCursorBlink() {
-    _cursorTimer =
-        Timer.periodic(const Duration(milliseconds: 500), (final timer) {
-      if (mounted) {
-        setState(() {
-          _showCursor = !_showCursor;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(final BuildContext context) {
-    return RichText(
-      textAlign: widget.textAlign,
-      text: TextSpan(
-        style: widget.style ??
-            TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
-        children: [
-          TextSpan(text: _displayText),
-          if (_showCursor && _currentIndex < widget.text.length)
-            TextSpan(
-              text: '|',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodySmall?.color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }

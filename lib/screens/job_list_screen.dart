@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart'
+    show LoadingAnimationWidget;
 import 'package:provider/provider.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
+import '../widgets/modern_loading_modal.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
@@ -86,8 +88,8 @@ class _JobListScreenState extends State<JobListScreen> {
                           width: 12,
                           height: 12,
                           child: LoadingAnimationWidget.beat(
-                            color: Colors.white,
                             size: 12,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -138,36 +140,45 @@ class _JobListScreenState extends State<JobListScreen> {
               builder: (final context, final jobProvider, final child) {
                 if (jobProvider.isLoading) {
                   return Center(
-                    child: LoadingAnimationWidget.beat(
+                    child: JobLoadingModal(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
                           : Theme.of(context).primaryColor,
-                      size: 50,
                     ),
                   );
                 }
 
                 if (jobProvider.jobs.isEmpty) {
-                  return const Center(
+                  // Check if there are any active filters
+                  final hasActiveFilters = jobProvider.searchQuery.isNotEmpty ||
+                      jobProvider.selectedLocation.isNotEmpty ||
+                      jobProvider.selectedExperience.isNotEmpty ||
+                      jobProvider.selectedType.isNotEmpty;
+
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.search_off,
                           size: 64,
                           color: Colors.grey,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
-                          'No jobs found',
-                          style: TextStyle(
+                          hasActiveFilters
+                              ? 'No jobs found with current filters'
+                              : 'No jobs found',
+                          style: const TextStyle(
                             fontSize: 18,
                             color: Colors.grey,
                           ),
                         ),
                         Text(
-                          'Try adjusting your search criteria',
-                          style: TextStyle(
+                          hasActiveFilters
+                              ? 'Try adjusting your filters to see more results'
+                              : 'Try adjusting your search criteria',
+                          style: const TextStyle(
                             color: Colors.grey,
                           ),
                         ),
@@ -200,6 +211,32 @@ class _JobListScreenState extends State<JobListScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: Consumer<JobProvider>(
+        builder: (final context, final jobProvider, final child) {
+          // Check if there are any active filters
+          final hasActiveFilters = jobProvider.searchQuery.isNotEmpty ||
+              jobProvider.selectedLocation.isNotEmpty ||
+              jobProvider.selectedExperience.isNotEmpty ||
+              jobProvider.selectedType.isNotEmpty;
+
+          if (!hasActiveFilters) {
+            return const SizedBox.shrink();
+          }
+
+          return FloatingActionButton(
+            onPressed: () {
+              jobProvider.clearFilters();
+            },
+            backgroundColor: const Color(0xFFC71A0E),
+            foregroundColor: Colors.white,
+            tooltip: 'Clear Filters',
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.clear_all),
+          );
+        },
       ),
     );
   }
@@ -459,8 +496,9 @@ class _JobListScreenState extends State<JobListScreen> {
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.fitWidth,
-                                            placeholder: (final context, final url) =>
-                                                Container(
+                                            placeholder:
+                                                (final context, final url) =>
+                                                    Container(
                                               width: 40,
                                               height: 40,
                                               color: Colors.grey[300],
@@ -1280,6 +1318,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   @override
   Widget build(final BuildContext context) {
     return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1288,7 +1333,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           const Text(
             'Filter Jobs',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1336,8 +1381,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                                 value: location,
                                 child: Text(
                                   location,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.black),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.color),
                                 ),
                               )),
                     ],

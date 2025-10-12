@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
+import '../widgets/modern_loading_modal.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
@@ -86,11 +86,11 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
         builder: (final context, final jobProvider, final child) {
           if (jobProvider.isLoading) {
             return Center(
-              child: LoadingAnimationWidget.beat(
+              child: JobLoadingModal(
+                category: widget.category.englisht,
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.white
                     : Theme.of(context).primaryColor,
-                size: 50,
               ),
             );
           }
@@ -98,6 +98,12 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
           final categoryJobs = jobProvider.categoryJobsWithViewCounts;
 
           if (categoryJobs.isEmpty) {
+            // Check if there are any active filters
+            final hasActiveFilters = jobProvider.searchQuery.isNotEmpty ||
+                jobProvider.selectedLocation.isNotEmpty ||
+                jobProvider.selectedExperience.isNotEmpty ||
+                jobProvider.selectedType.isNotEmpty;
+
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -108,18 +114,25 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                     color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'No jobs found in ${widget.category.englisht}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                      fontWeight: FontWeight.w500,
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      hasActiveFilters
+                          ? 'No jobs found with current filters'
+                          : 'No jobs found in ${widget.category.englisht}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Jobs from this category will appear here when available',
+                    hasActiveFilters
+                        ? 'Try adjusting your filters to see more results'
+                        : 'Jobs from this category will appear here when available',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                       fontSize: 14,
@@ -212,6 +225,32 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                 ),
               ),
             ],
+          );
+        },
+      ),
+      floatingActionButton: Consumer<JobProvider>(
+        builder: (final context, final jobProvider, final child) {
+          // Check if there are any active filters
+          final hasActiveFilters = jobProvider.searchQuery.isNotEmpty ||
+              jobProvider.selectedLocation.isNotEmpty ||
+              jobProvider.selectedExperience.isNotEmpty ||
+              jobProvider.selectedType.isNotEmpty;
+
+          if (!hasActiveFilters) {
+            return const SizedBox.shrink();
+          }
+
+          return FloatingActionButton(
+            onPressed: () {
+              jobProvider.clearFilters();
+            },
+            backgroundColor: widget.categoryColor,
+            foregroundColor: Colors.white,
+            tooltip: 'Clear Filters',
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.clear_all),
           );
         },
       ),
@@ -573,8 +612,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.fitWidth,
-                                            placeholder: (final context, final url) =>
-                                                Container(
+                                            placeholder:
+                                                (final context, final url) =>
+                                                    Container(
                                               width: 40,
                                               height: 40,
                                               color: Colors.grey[300],
@@ -1385,6 +1425,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   @override
   Widget build(final BuildContext context) {
     return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1393,7 +1440,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           const Text(
             'Filter Jobs',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),

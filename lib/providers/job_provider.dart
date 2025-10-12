@@ -1070,10 +1070,10 @@ class JobProvider with ChangeNotifier {
   List<Job> get jobsWithViewCounts {
     // Only recreate jobs if view counts have changed
     if (_viewCounts.isEmpty) {
-      return _jobs;
+      return _filteredJobs;
     }
 
-    return _jobs.map((final job) {
+    return _filteredJobs.map((final job) {
       final viewCount = getViewCount(job.comments);
       // Only create new job if view count is different
       if (job.viewCount != viewCount) {
@@ -1111,10 +1111,10 @@ class JobProvider with ChangeNotifier {
   List<Job> get categoryJobsWithViewCounts {
     // Only recreate jobs if view counts have changed
     if (_viewCounts.isEmpty) {
-      return _categoryJobs;
+      return _filteredCategoryJobs;
     }
 
-    return _categoryJobs.map((final job) {
+    return _filteredCategoryJobs.map((final job) {
       final viewCount = getViewCount(job.comments);
       // Only create new job if view count is different
       if (job.viewCount != viewCount) {

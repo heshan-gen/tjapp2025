@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../models/banner.dart' as banner_model;
 
 class BannerSlider extends StatefulWidget {
@@ -331,8 +332,11 @@ class _BannerSliderState extends State<BannerSlider> {
             width: double.infinity,
             placeholder: (final context, final url) => Container(
               color: Colors.grey[200],
-              child: const Center(
-                child: CircularProgressIndicator(),
+              child: Center(
+                child: LoadingAnimationWidget.beat(
+                  color: Colors.grey,
+                  size: 30,
+                ),
               ),
             ),
             errorWidget: (final context, final url, final error) {
