@@ -12,6 +12,7 @@ import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
 import '../screens/category_job_screen.dart';
 import '../services/color_service.dart';
+import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 
 class JobListScreen extends StatefulWidget {
@@ -681,9 +682,14 @@ class _JobListScreenState extends State<JobListScreen> {
                                       ),
                                     ),
                                   ],
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // Rating (only show if > 0)
+                              Row(
+                                children: [
                                   // View count (only show if > 0)
                                   if (job.viewCount > 0) ...[
-                                    const SizedBox(width: 8),
                                     const Icon(
                                       Icons.visibility,
                                       size: 16,
@@ -699,8 +705,16 @@ class _JobListScreenState extends State<JobListScreen> {
                                       ),
                                     ),
                                   ],
+                                  if (job.totalRatings > 0) ...[
+                                    const SizedBox(width: 8),
+                                    JobRatingWidget(
+                                      jobComments: job.comments,
+                                      averageRating: job.averageRating,
+                                      totalRatings: job.totalRatings,
+                                    ),
+                                  ],
                                 ],
-                              ),
+                              )
                             ],
                           ],
                         ),

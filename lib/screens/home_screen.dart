@@ -9,6 +9,7 @@ import '../providers/banner_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/banner_slider.dart';
+import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 import 'job_list_screen.dart';
 
@@ -269,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         SizedBox(
           height: _expandedCards.isNotEmpty
-              ? 140
-              : 95, // Dynamic height based on expansion state
+              ? (hotJobs.any((final job) => job.totalRatings > 0) ? 165 : 160)
+              : 95, // Dynamic height based on expansion state and rating availability
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: hotJobs.length,
@@ -638,9 +639,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ],
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Rating row (only show if > 0)
+                            Row(
+                              children: [
                                 // View count (only show if > 0)
                                 if (job.viewCount > 0) ...[
-                                  const SizedBox(width: 8),
                                   Icon(
                                     Icons.visibility,
                                     size: 16,
@@ -660,8 +666,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ],
+                                if (job.totalRatings > 0) ...[
+                                  const SizedBox(width: 8),
+                                  JobRatingWidget(
+                                    jobComments: job.comments,
+                                    averageRating: job.averageRating,
+                                    totalRatings: job.totalRatings,
+                                  ),
+                                ],
                               ],
-                            ),
+                            )
                           ],
                         ],
                       ),

@@ -14,6 +14,7 @@ import '../providers/theme_provider.dart';
 import '../services/company_service.dart';
 import '../services/web_scraping_service.dart';
 import '../widgets/image_viewer_dialog.dart';
+import '../widgets/job_rating_widget.dart';
 
 class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
@@ -225,6 +226,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     const SizedBox(height: 20),
                     _buildCompanyInfo(context),
                   ],
+                  const SizedBox(height: 20),
+                  _buildRatingSection(context),
                   const SizedBox(
                       height: 20), // Add bottom padding for fixed footer
                 ],
@@ -1474,6 +1477,81 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRatingSection(final BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFA726).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: const Icon(
+                    Icons.star,
+                    color: Color(0xFFFFA726),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Rate this Job',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.titleMedium?.color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Rating input
+            JobRatingWidget(
+              jobComments: widget.job.comments,
+              averageRating: widget.job.averageRating,
+              totalRatings: widget.job.totalRatings,
+              showRatingInput: true,
+              onRatingChanged: () {
+                // Refresh the job data when rating changes
+                context
+                    .read<JobProvider>()
+                    .refreshJobRating(widget.job.comments);
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Rating stats
+            if (widget.job.totalRatings > 0)
+              JobRatingStatsWidget(
+                jobComments: widget.job.comments,
+                averageRating: widget.job.averageRating,
+                totalRatings: widget.job.totalRatings,
+              ),
+          ],
+        ),
+      ),
     );
   }
 

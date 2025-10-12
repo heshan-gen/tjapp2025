@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../data/rss_categories.dart';
 import '../services/view_count_service.dart';
+import '../services/rating_service.dart';
 
 class Job {
   Job({
@@ -33,6 +34,8 @@ class Job {
     this.isFavorite = false,
     this.gradientColors = const [],
     this.viewCount = 0,
+    this.averageRating = 0.0,
+    this.totalRatings = 0,
   });
   final String id;
   final String title;
@@ -57,6 +60,8 @@ class Job {
   final bool isFavorite;
   final List<Color> gradientColors;
   final int viewCount;
+  final double averageRating;
+  final int totalRatings;
 }
 
 class JobProvider with ChangeNotifier {
@@ -145,6 +150,9 @@ class JobProvider with ChangeNotifier {
   // Search debouncing
   Timer? _searchTimer;
 
+  // Rating refresh timer for data consistency
+  Timer? _ratingRefreshTimer;
+
   // SharedPreferences key for storing favorites
   static const String _favoritesKey = 'favorite_job_ids';
 
@@ -219,8 +227,12 @@ class JobProvider with ChangeNotifier {
       // Load favorites after jobs are loaded
       await _loadFavorites();
 
-      // Load view counts in background (non-blocking)
+      // Load view counts and ratings in background (non-blocking)
       loadViewCounts();
+      loadRatings();
+
+      // Start periodic rating refresh for data consistency
+      _startRatingRefreshTimer();
 
       _isLoading = false;
       notifyListeners();
@@ -242,6 +254,11 @@ class JobProvider with ChangeNotifier {
       // Store category jobs separately, don't replace the main jobs list
       _categoryJobs = categoryJobs;
       _filteredCategoryJobs = categoryJobs; // Initialize filtered category jobs
+
+      // Load view counts and ratings in background (non-blocking)
+      loadViewCounts();
+      loadRatings();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -975,6 +992,9 @@ class JobProvider with ChangeNotifier {
   Map<String, int> _viewCounts = {};
   StreamSubscription<Map<String, int>>? _viewCountSubscription;
 
+  // Rating methods
+  final Map<String, Map<String, dynamic>> _jobRatings = {};
+
   /// Load view counts for all jobs (optimized)
   Future<void> loadViewCounts() async {
     try {
@@ -1066,17 +1086,18 @@ class JobProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Get jobs with updated view counts (optimized to avoid unnecessary object creation)
+  /// Get jobs with updated view counts and ratings (optimized to avoid unnecessary object creation)
   List<Job> get jobsWithViewCounts {
-    // Only recreate jobs if view counts have changed
-    if (_viewCounts.isEmpty) {
-      return _filteredJobs;
-    }
-
     return _filteredJobs.map((final job) {
       final viewCount = getViewCount(job.comments);
-      // Only create new job if view count is different
-      if (job.viewCount != viewCount) {
+      final ratingStats = getJobRatingStats(job.comments);
+      final averageRating = ratingStats['averageRating'] as double;
+      final totalRatings = ratingStats['totalRatings'] as int;
+
+      // Only create new job if view count or ratings are different
+      if (job.viewCount != viewCount ||
+          job.averageRating != averageRating ||
+          job.totalRatings != totalRatings) {
         return Job(
           id: job.id,
           title: job.title,
@@ -1101,23 +1122,26 @@ class JobProvider with ChangeNotifier {
           isFavorite: job.isFavorite,
           gradientColors: job.gradientColors,
           viewCount: viewCount,
+          averageRating: averageRating,
+          totalRatings: totalRatings,
         );
       }
       return job;
     }).toList();
   }
 
-  /// Get category jobs with updated view counts (optimized)
+  /// Get category jobs with updated view counts and ratings (optimized)
   List<Job> get categoryJobsWithViewCounts {
-    // Only recreate jobs if view counts have changed
-    if (_viewCounts.isEmpty) {
-      return _filteredCategoryJobs;
-    }
-
     return _filteredCategoryJobs.map((final job) {
       final viewCount = getViewCount(job.comments);
-      // Only create new job if view count is different
-      if (job.viewCount != viewCount) {
+      final ratingStats = getJobRatingStats(job.comments);
+      final averageRating = ratingStats['averageRating'] as double;
+      final totalRatings = ratingStats['totalRatings'] as int;
+
+      // Only create new job if view count or ratings are different
+      if (job.viewCount != viewCount ||
+          job.averageRating != averageRating ||
+          job.totalRatings != totalRatings) {
         return Job(
           id: job.id,
           title: job.title,
@@ -1142,10 +1166,184 @@ class JobProvider with ChangeNotifier {
           isFavorite: job.isFavorite,
           gradientColors: job.gradientColors,
           viewCount: viewCount,
+          averageRating: averageRating,
+          totalRatings: totalRatings,
         );
       }
       return job;
     }).toList();
+  }
+
+  /// Load ratings for all jobs (optimized)
+  Future<void> loadRatings() async {
+    try {
+      // Load ratings in background without blocking UI
+      _loadRatingsInBackground();
+    } catch (e) {
+      // Silently fail to avoid blocking the app
+    }
+  }
+
+  /// Load ratings in background (optimized)
+  Future<void> _loadRatingsInBackground() async {
+    try {
+      // Only load ratings for visible jobs (first 50) to improve performance
+      final visibleJobs =
+          _jobs.take(50).map((final job) => job.comments).toList();
+
+      if (visibleJobs.isNotEmpty) {
+        for (final jobComments in visibleJobs) {
+          final ratingStats =
+              await RatingService.getJobRatingStats(jobComments);
+          _jobRatings[jobComments] = ratingStats;
+        }
+      }
+
+      // Initialize all jobs with 0 ratings
+      for (final job in _jobs) {
+        _jobRatings.putIfAbsent(
+            job.comments,
+            () => {
+                  'averageRating': 0.0,
+                  'totalRatings': 0,
+                  'ratingDistribution': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                });
+      }
+
+      // Notify listeners
+      notifyListeners();
+    } catch (e) {
+      // Silently fail - initialize with 0 ratings
+      for (final job in _jobs) {
+        _jobRatings.putIfAbsent(
+            job.comments,
+            () => {
+                  'averageRating': 0.0,
+                  'totalRatings': 0,
+                  'ratingDistribution': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                });
+      }
+      // Notify listeners
+      notifyListeners();
+    }
+  }
+
+  /// Get rating stats for a specific job
+  Map<String, dynamic> getJobRatingStats(final String jobComments) {
+    return _jobRatings[jobComments] ??
+        {
+          'averageRating': 0.0,
+          'totalRatings': 0,
+          'ratingDistribution': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        };
+  }
+
+  /// Refresh ratings for a specific job
+  Future<void> refreshJobRating(final String jobComments) async {
+    try {
+      final ratingStats = await RatingService.getJobRatingStats(jobComments);
+      _jobRatings[jobComments] = ratingStats;
+
+      // Update the job object in the list to reflect new rating data
+      final jobIndex =
+          _jobs.indexWhere((final job) => job.comments == jobComments);
+      if (jobIndex != -1) {
+        final job = _jobs[jobIndex];
+        final updatedJob = Job(
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          salary: job.salary,
+          description: job.description,
+          requirements: job.requirements,
+          type: job.type,
+          experience: job.experience,
+          postedDate: job.postedDate,
+          closingDate: job.closingDate,
+          author: job.author,
+          jobId: job.jobId,
+          comments: job.comments,
+          applicantCode: job.applicantCode,
+          feedUrl: job.feedUrl,
+          publisher: job.publisher,
+          isRemote: job.isRemote,
+          skills: job.skills,
+          guid: job.guid,
+          isFavorite: job.isFavorite,
+          gradientColors: job.gradientColors,
+          viewCount: job.viewCount,
+          averageRating: ratingStats['averageRating'] as double,
+          totalRatings: ratingStats['totalRatings'] as int,
+        );
+        _jobs[jobIndex] = updatedJob;
+      }
+
+      notifyListeners();
+    } catch (e) {
+      print('Error refreshing job rating: $e');
+    }
+  }
+
+  /// Refresh all ratings to ensure data consistency across devices
+  Future<void> refreshAllRatings() async {
+    try {
+      // Refresh ratings for all jobs
+      await _loadRatingsInBackground();
+
+      // Update all job objects with fresh rating data
+      for (int i = 0; i < _jobs.length; i++) {
+        final job = _jobs[i];
+        final ratingStats = _jobRatings[job.comments];
+        if (ratingStats != null) {
+          final updatedJob = Job(
+            id: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salary,
+            description: job.description,
+            requirements: job.requirements,
+            type: job.type,
+            experience: job.experience,
+            postedDate: job.postedDate,
+            closingDate: job.closingDate,
+            author: job.author,
+            jobId: job.jobId,
+            comments: job.comments,
+            applicantCode: job.applicantCode,
+            feedUrl: job.feedUrl,
+            publisher: job.publisher,
+            isRemote: job.isRemote,
+            skills: job.skills,
+            guid: job.guid,
+            isFavorite: job.isFavorite,
+            gradientColors: job.gradientColors,
+            viewCount: job.viewCount,
+            averageRating: ratingStats['averageRating'] as double,
+            totalRatings: ratingStats['totalRatings'] as int,
+          );
+          _jobs[i] = updatedJob;
+        }
+      }
+
+      notifyListeners();
+    } catch (e) {
+      print('Error refreshing all ratings: $e');
+    }
+  }
+
+  /// Start periodic rating refresh timer for data consistency
+  void _startRatingRefreshTimer() {
+    _ratingRefreshTimer?.cancel(); // Cancel existing timer if any
+
+    // Refresh ratings every 30 seconds to ensure data consistency
+    _ratingRefreshTimer = Timer.periodic(const Duration(seconds: 30), (final timer) {
+      // Only refresh if we have jobs loaded
+      if (_jobs.isNotEmpty) {
+        refreshAllRatings();
+      }
+    });
   }
 
   /// Dispose resources
@@ -1154,6 +1352,7 @@ class JobProvider with ChangeNotifier {
     _viewCountSubscription?.cancel();
     _searchTimer?.cancel();
     _firebaseUpdateTimer?.cancel();
+    _ratingRefreshTimer?.cancel();
     super.dispose();
   }
 }

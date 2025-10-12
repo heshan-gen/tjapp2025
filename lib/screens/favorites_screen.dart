@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -97,6 +98,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         builder: (final context, final jobProvider, final child) {
           final favoriteJobs = jobProvider.getFavoriteJobs().map((final job) {
             final viewCount = jobProvider.getViewCount(job.comments);
+            final ratingStats = jobProvider.getJobRatingStats(job.comments);
+            final averageRating = ratingStats['averageRating'] as double;
+            final totalRatings = ratingStats['totalRatings'] as int;
+
             return Job(
               id: job.id,
               title: job.title,
@@ -121,6 +126,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               isFavorite: job.isFavorite,
               gradientColors: job.gradientColors,
               viewCount: viewCount,
+              averageRating: averageRating,
+              totalRatings: totalRatings,
             );
           }).toList();
 
@@ -548,6 +555,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ],
                     ],
                   ),
+                  // Rating row (only show if > 0)
+                  if (job.totalRatings > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        JobRatingWidget(
+                          jobComments: job.comments,
+                          averageRating: job.averageRating,
+                          totalRatings: job.totalRatings,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
