@@ -9,7 +9,7 @@ import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
 import '../services/color_service.dart';
-import '../widgets/job_rating_widget.dart';
+// import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 
 class CategoryJobScreen extends StatefulWidget {
@@ -55,12 +55,37 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(
-          widget.category.minititle,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-          ),
+        title: Consumer<JobProvider>(
+          builder: (final context, final jobProvider, final child) {
+            return Row(
+              children: [
+                Text(
+                  widget.category.minititle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${jobProvider.categoryJobsWithViewCounts.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
@@ -76,10 +101,6 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                 },
               );
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterBottomSheet,
           ),
         ],
       ),
@@ -270,7 +291,8 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                 controller: _searchController,
                 style: const TextStyle(fontSize: 12),
                 decoration: InputDecoration(
-                  hintText: 'Search jobs in ${widget.category.englisht}...',
+                  hintText:
+                      'Search jobs in ${widget.category.englisht} by title, company, location, or skills...',
                   hintStyle:
                       TextStyle(fontSize: 12, color: widget.categoryColor),
                   prefixIcon:
@@ -312,6 +334,20 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                   }
                 },
               ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFC22820),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: IconButton(
+              icon:
+                  const Icon(Icons.filter_list, size: 20, color: Colors.white),
+              onPressed: _showFilterBottomSheet,
             ),
           ),
           const SizedBox(width: 8),
@@ -414,58 +450,58 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                             : Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        text: 'Currently viewing: ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white.withOpacity(0.7)
-                              : Colors.white.withOpacity(0.7),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: widget.category.minititle,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Consumer<JobProvider>(
-                      builder: (final context, final jobProvider, final child) {
-                        final categoryJobs =
-                            jobProvider.categoryJobsWithViewCounts;
-                        return Container(
-                          padding: const EdgeInsets.fromLTRB(
-                            12,
-                            4,
-                            12,
-                            6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            '${categoryJobs.length} jobs available',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    // const SizedBox(height: 4),
+                    // RichText(
+                    //   text: TextSpan(
+                    //     text: 'Currently viewing: ',
+                    //     style: TextStyle(
+                    //       fontSize: 12,
+                    //       color: Theme.of(context).brightness == Brightness.dark
+                    //           ? Colors.white.withOpacity(0.7)
+                    //           : Colors.white.withOpacity(0.7),
+                    //     ),
+                    //     children: [
+                    //       TextSpan(
+                    //         text: widget.category.minititle,
+                    //         style: TextStyle(
+                    //           fontSize: 12,
+                    //           color: Theme.of(context).brightness ==
+                    //                   Brightness.dark
+                    //               ? Colors.white
+                    //               : Colors.white,
+                    //           fontWeight: FontWeight.bold,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 6),
+                    // Consumer<JobProvider>(
+                    //   builder: (final context, final jobProvider, final child) {
+                    //     final categoryJobs =
+                    //         jobProvider.categoryJobsWithViewCounts;
+                    //     return Container(
+                    //       padding: const EdgeInsets.fromLTRB(
+                    //         12,
+                    //         4,
+                    //         12,
+                    //         6,
+                    //       ),
+                    //       decoration: BoxDecoration(
+                    //         color: Colors.white.withOpacity(0.1),
+                    //         borderRadius: BorderRadius.circular(16),
+                    //       ),
+                    //       child: Text(
+                    //         '${categoryJobs.length} jobs available',
+                    //         style: const TextStyle(
+                    //           fontSize: 10,
+                    //           color: Colors.white,
+                    //           fontWeight: FontWeight.bold,
+                    //         ),
+                    //       ),
+                    //     );
+                    //   },
+                    // ),
                   ],
                 ),
               ),
@@ -805,36 +841,36 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                                   ],
                                 ],
                               ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  // View count (only show if > 0)
-                                  if (job.viewCount > 0) ...[
-                                    const Icon(
-                                      Icons.visibility,
-                                      size: 16,
-                                      color: Colors.blue,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${job.viewCount} views',
-                                      style: const TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                  if (job.totalRatings > 0) ...[
-                                    const SizedBox(width: 8),
-                                    JobRatingWidget(
-                                      jobComments: job.comments,
-                                      averageRating: job.averageRating,
-                                      totalRatings: job.totalRatings,
-                                    ),
-                                  ],
-                                ],
-                              )
+                              // const SizedBox(height: 10),
+                              // Row(
+                              //   children: [
+                              //     // View count (only show if > 0)
+                              //     if (job.viewCount > 0) ...[
+                              //       const Icon(
+                              //         Icons.visibility,
+                              //         size: 16,
+                              //         color: Colors.blue,
+                              //       ),
+                              //       const SizedBox(width: 4),
+                              //       Text(
+                              //         '${job.viewCount} views',
+                              //         style: const TextStyle(
+                              //           color: Colors.blue,
+                              //           fontSize: 10,
+                              //           fontWeight: FontWeight.w500,
+                              //         ),
+                              //       ),
+                              //     ],
+                              //     if (job.totalRatings > 0) ...[
+                              //       const SizedBox(width: 8),
+                              //       JobRatingWidget(
+                              //         jobComments: job.comments,
+                              //         averageRating: job.averageRating,
+                              //         totalRatings: job.totalRatings,
+                              //       ),
+                              //     ],
+                              //   ],
+                              // )
                             ],
                           ],
                         ),

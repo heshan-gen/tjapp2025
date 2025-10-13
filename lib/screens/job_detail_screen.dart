@@ -14,7 +14,7 @@ import '../providers/theme_provider.dart';
 import '../services/company_service.dart';
 import '../services/web_scraping_service.dart';
 import '../widgets/image_viewer_dialog.dart';
-import '../widgets/job_rating_widget.dart';
+// import '../widgets/job_rating_widget.dart';
 
 class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
@@ -25,7 +25,9 @@ class JobDetailScreen extends StatefulWidget {
 }
 
 class _JobDetailScreenState extends State<JobDetailScreen> {
+  // ignore: unused_field, use_late_for_private_fields_and_variables
   String? _companyInfo;
+  // ignore: unused_field
   bool _isLoadingCompanyInfo = true;
   ScrapedJobContent? _scrapedContent;
   bool _isLoadingScrapedContent = false;
@@ -215,8 +217,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   _buildJobInfo(),
                   const SizedBox(height: 20),
                   _buildJobDescription(),
-                  const SizedBox(height: 20),
-                  _buildRequirements(),
+                  if (widget.job.requirements !=
+                      'Requirements not specified') ...[
+                    const SizedBox(height: 20),
+                    _buildRequirements(),
+                  ],
                   if (widget.job.skills.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     _buildSkills(context),
@@ -389,12 +394,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         backgroundColor: Colors.greenAccent.withOpacity(0.2),
                       ),
                     ],
-                    const SizedBox(width: 12),
-                    _buildInfoChip(
-                      icon: Icons.attach_money,
-                      text: widget.job.salary,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                    if (widget.job.salary != 'Salary Not Specified') ...[
+                      const SizedBox(width: 12),
+                      _buildInfoChip(
+                        icon: Icons.attach_money,
+                        text: widget.job.salary,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ],
                     const SizedBox(width: 12),
                     _buildInfoChip(
                       icon: Icons.schedule,
@@ -405,28 +412,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Center(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildBadge(
-                      text: widget.job.type,
-                      color: Theme.of(context).cardColor,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildBadge(
-                      text: widget.job.experience,
-                      color: Theme.of(context).cardColor,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // const SizedBox(height: 16),
+            // Center(
+            //   child: SingleChildScrollView(
+            //     scrollDirection: Axis.horizontal,
+            //     child: Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: [
+            //         _buildBadge(
+            //           text: widget.job.type,
+            //           color: Theme.of(context).cardColor,
+            //           backgroundColor: Colors.white.withOpacity(0.2),
+            //         ),
+            //         const SizedBox(width: 8),
+            //         _buildBadge(
+            //           text: widget.job.experience,
+            //           color: Theme.of(context).cardColor,
+            //           backgroundColor: Colors.white.withOpacity(0.2),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -468,36 +475,36 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Widget _buildBadge({
-    required final String text,
-    required final Color color,
-    required final Color backgroundColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBadge({
+  //   required final String text,
+  //   required final Color color,
+  //   required final Color backgroundColor,
+  // }) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       color: backgroundColor,
+  //       borderRadius: BorderRadius.circular(5),
+  //       border: Border.all(
+  //         color: Colors.white.withOpacity(0.3),
+  //         width: 1,
+  //       ),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         Text(
+  //           text,
+  //           style: const TextStyle(
+  //             color: Colors.white,
+  //             fontSize: 10,
+  //             fontWeight: FontWeight.w600,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildJobInfo() {
     return Container(
@@ -544,24 +551,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            // Priority 1-2: Company and Location (most important)
-            _buildInfoRowPair(
-              'Company',
-              widget.job.author.trim().replaceAll(RegExp(r'\s+'), ' '),
-              Icons.business,
-              'Location',
-              widget.job.location,
-              Icons.location_on,
-            ),
-            // Priority 3-4: Salary and Type (key decision factors)
-            _buildInfoRowPair(
-              'Salary',
-              widget.job.salary,
-              Icons.attach_money,
-              'Type',
-              widget.job.type,
-              Icons.work_outline,
-            ),
+
             // Priority 5-6: Experience and Posted Date
             _buildInfoRowPair(
               'Experience',
@@ -581,16 +571,31 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 widget.job.jobId.isNotEmpty ? widget.job.jobId : 'N/A',
                 Icons.tag,
               ),
-            // Additional info: Work Type (if remote)
-            if (widget.job.isRemote)
-              _buildInfoRowPair(
-                'Work Type',
-                'Remote',
-                Icons.home_work,
-                '',
-                '',
-                Icons.info,
-              ),
+
+            // Priority 3-4: Salary and Type (key decision factors)
+            // if (widget.job.salary != "Salary Not Specified")
+            //   _buildInfoRowPair(
+            //     'Salary',
+            //     widget.job.salary,
+            //     Icons.attach_money,
+            //     'Type',
+            //     widget.job.type,
+            //     Icons.work_outline,
+            //   )
+            // else
+            //   Container(
+            //     margin: const EdgeInsets.only(bottom: 12),
+            //     child: Row(
+            //       children: [
+            //         Expanded(
+            //           child: _buildInfoRow(
+            //               'Type', widget.job.type, Icons.work_outline),
+            //         ),
+            //         const SizedBox(width: 12),
+            //         const Expanded(child: SizedBox()),
+            //       ],
+            //     ),
+            //   ),
           ],
         ),
       ),
@@ -1086,180 +1091,180 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF06B6D4).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: const Icon(
-                    Icons.business_outlined,
-                    color: Color(0xFF06B6D4),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'About Company',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.titleMedium?.color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF06B6D4),
-                          Color(0xFF0891B2),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF06B6D4).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.business,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.job.company
-                              .trim()
-                              .replaceAll(RegExp(r'\s+'), ' '),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(context).textTheme.titleLarge?.color,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_isLoadingCompanyInfo)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: LoadingAnimationWidget.beat(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Theme.of(context).primaryColor,
-                    size: 50,
-                  ),
-                ),
-              )
-            else
-              Text(
-                _companyInfo ?? 'About Company',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                  height: 1.5,
-                ),
-              ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () {
-                // Open map with company location
-                _openMap();
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFF06B6D4).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Color(0xFF06B6D4),
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'View on Map',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF06B6D4),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      // child: Padding(
+      //   padding: const EdgeInsets.all(8),
+      //   child: Column(
+      //     crossAxisAlignment: CrossAxisAlignment.start,
+      //     children: [
+      //       Row(
+      //         children: [
+      //           Container(
+      //             padding: const EdgeInsets.all(4),
+      //             decoration: BoxDecoration(
+      //               color: const Color(0xFF06B6D4).withOpacity(0.1),
+      //               borderRadius: BorderRadius.circular(5),
+      //             ),
+      //             child: const Icon(
+      //               Icons.business_outlined,
+      //               color: Color(0xFF06B6D4),
+      //               size: 20,
+      //             ),
+      //           ),
+      //           const SizedBox(width: 12),
+      //           Text(
+      //             'About Company',
+      //             style: TextStyle(
+      //               fontSize: 14,
+      //               fontWeight: FontWeight.bold,
+      //               color: Theme.of(context).textTheme.titleMedium?.color,
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //       const SizedBox(height: 20),
+      //       Container(
+      //         padding: const EdgeInsets.only(bottom: 5),
+      //         child: Row(
+      //           children: [
+      //             Container(
+      //               width: 40,
+      //               height: 40,
+      //               decoration: BoxDecoration(
+      //                 gradient: const LinearGradient(
+      //                   colors: [
+      //                     Color(0xFF06B6D4),
+      //                     Color(0xFF0891B2),
+      //                   ],
+      //                 ),
+      //                 borderRadius: BorderRadius.circular(5),
+      //                 boxShadow: [
+      //                   BoxShadow(
+      //                     color: const Color(0xFF06B6D4).withOpacity(0.3),
+      //                     blurRadius: 8,
+      //                     offset: const Offset(0, 4),
+      //                   ),
+      //                 ],
+      //               ),
+      //               child: const Icon(
+      //                 Icons.business,
+      //                 color: Colors.white,
+      //                 size: 24,
+      //               ),
+      //             ),
+      //             const SizedBox(width: 16),
+      //             Expanded(
+      //               child: Column(
+      //                 crossAxisAlignment: CrossAxisAlignment.start,
+      //                 children: [
+      //                   Text(
+      //                     widget.job.company
+      //                         .trim()
+      //                         .replaceAll(RegExp(r'\s+'), ' '),
+      //                     style: TextStyle(
+      //                       fontSize: 16,
+      //                       fontWeight: FontWeight.bold,
+      //                       color:
+      //                           Theme.of(context).textTheme.titleLarge?.color,
+      //                     ),
+      //                   ),
+      //                 ],
+      //               ),
+      //             ),
+      //           ],
+      //         ),
+      //       ),
+      //       const SizedBox(height: 10),
+      //       if (_isLoadingCompanyInfo)
+      //         Center(
+      //           child: Padding(
+      //             padding: const EdgeInsets.all(16.0),
+      //             child: LoadingAnimationWidget.beat(
+      //               color: Theme.of(context).brightness == Brightness.dark
+      //                   ? Colors.white
+      //                   : Theme.of(context).primaryColor,
+      //               size: 50,
+      //             ),
+      //           ),
+      //         )
+      //       else
+      //         Text(
+      //           _companyInfo ?? 'About Company',
+      //           style: TextStyle(
+      //             fontSize: 12,
+      //             color: Theme.of(context).textTheme.titleLarge?.color,
+      //             height: 1.5,
+      //           ),
+      //         ),
+      //       const SizedBox(height: 8),
+      //       GestureDetector(
+      //         onTap: () {
+      //           // Open map with company location
+      //           _openMap();
+      //         },
+      //         child: Container(
+      //           padding:
+      //               const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      //           decoration: BoxDecoration(
+      //             color: const Color(0xFF06B6D4).withOpacity(0.1),
+      //             borderRadius: BorderRadius.circular(8),
+      //             border: Border.all(
+      //               color: const Color(0xFF06B6D4).withOpacity(0.3),
+      //               width: 1,
+      //             ),
+      //           ),
+      //           child: const Row(
+      //             mainAxisSize: MainAxisSize.min,
+      //             children: [
+      //               Icon(
+      //                 Icons.location_on,
+      //                 size: 16,
+      //                 color: Color(0xFF06B6D4),
+      //               ),
+      //               SizedBox(width: 4),
+      //               Text(
+      //                 'View on Map',
+      //                 style: TextStyle(
+      //                   fontSize: 12,
+      //                   color: Color(0xFF06B6D4),
+      //                   fontWeight: FontWeight.w500,
+      //                 ),
+      //               ),
+      //             ],
+      //           ),
+      //         ),
+      //       ),
+      //     ],
+      //   ),
+      // ),
     );
   }
 
-  Future<void> _openMap() async {
-    try {
-      // You can customize this URL based on your needs
-      // This will open the default map app with a search for the company name
-      final companyName = widget.job.company.trim();
-      final encodedCompany = Uri.encodeComponent(companyName);
-      final mapUrl =
-          'https://www.google.com/maps/search/?api=1&query=$encodedCompany';
+  // Future<void> _openMap() async {
+  //   try {
+  //     // You can customize this URL based on your needs
+  //     // This will open the default map app with a search for the company name
+  //     final companyName = widget.job.company.trim();
+  //     final encodedCompany = Uri.encodeComponent(companyName);
+  //     final mapUrl =
+  //         'https://www.google.com/maps/search/?api=1&query=$encodedCompany';
 
-      final Uri uri = Uri.parse(mapUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback to a general search
-        final fallbackUrl =
-            'https://www.google.com/maps/search/$encodedCompany';
-        final Uri fallbackUri = Uri.parse(fallbackUrl);
-        if (await canLaunchUrl(fallbackUri)) {
-          await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-        }
-      }
-    } catch (e) {
-      print('Error opening map: $e');
-      // You could show a snackbar or dialog here to inform the user
-    }
-  }
+  //     final Uri uri = Uri.parse(mapUrl);
+  //     if (await canLaunchUrl(uri)) {
+  //       await launchUrl(uri, mode: LaunchMode.externalApplication);
+  //     } else {
+  //       // Fallback to a general search
+  //       final fallbackUrl =
+  //           'https://www.google.com/maps/search/$encodedCompany';
+  //       final Uri fallbackUri = Uri.parse(fallbackUrl);
+  //       if (await canLaunchUrl(fallbackUri)) {
+  //         await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Error opening map: $e');
+  //     // You could show a snackbar or dialog here to inform the user
+  //   }
+  // }
 
   Future<void> _launchApplicationUrl() async {
     final Uri toLaunch = Uri(
@@ -1494,64 +1499,64 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFA726).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: const Icon(
-                    Icons.star,
-                    color: Color(0xFFFFA726),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Rate this Job',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.titleMedium?.color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+      // child: Padding(
+      //   padding: const EdgeInsets.all(16),
+      //   child: Column(
+      //     crossAxisAlignment: CrossAxisAlignment.start,
+      //     children: [
+      //       Row(
+      //         children: [
+      //           Container(
+      //             padding: const EdgeInsets.all(4),
+      //             decoration: BoxDecoration(
+      //               color: const Color(0xFFFFA726).withOpacity(0.1),
+      //               borderRadius: BorderRadius.circular(5),
+      //             ),
+      //             child: const Icon(
+      //               Icons.star,
+      //               color: Color(0xFFFFA726),
+      //               size: 20,
+      //             ),
+      //           ),
+      //           const SizedBox(width: 12),
+      //           Text(
+      //             'Rate this Job',
+      //             style: TextStyle(
+      //               fontSize: 14,
+      //               fontWeight: FontWeight.bold,
+      //               color: Theme.of(context).textTheme.titleMedium?.color,
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //       const SizedBox(height: 16),
 
-            // Rating input
-            JobRatingWidget(
-              jobComments: widget.job.comments,
-              averageRating: widget.job.averageRating,
-              totalRatings: widget.job.totalRatings,
-              showRatingInput: true,
-              onRatingChanged: () {
-                // Refresh the job data when rating changes
-                context
-                    .read<JobProvider>()
-                    .refreshJobRating(widget.job.comments);
-              },
-            ),
+      //       // Rating input
+      //       JobRatingWidget(
+      //         jobComments: widget.job.comments,
+      //         averageRating: widget.job.averageRating,
+      //         totalRatings: widget.job.totalRatings,
+      //         showRatingInput: true,
+      //         onRatingChanged: () {
+      //           // Refresh the job data when rating changes
+      //           context
+      //               .read<JobProvider>()
+      //               .refreshJobRating(widget.job.comments);
+      //         },
+      //       ),
 
-            const SizedBox(height: 16),
+      //       const SizedBox(height: 16),
 
-            // Rating stats
-            if (widget.job.totalRatings > 0)
-              JobRatingStatsWidget(
-                jobComments: widget.job.comments,
-                averageRating: widget.job.averageRating,
-                totalRatings: widget.job.totalRatings,
-              ),
-          ],
-        ),
-      ),
+      //       // Rating stats
+      //       if (widget.job.totalRatings > 0)
+      //         JobRatingStatsWidget(
+      //           jobComments: widget.job.comments,
+      //           averageRating: widget.job.averageRating,
+      //           totalRatings: widget.job.totalRatings,
+      //         ),
+      //     ],
+      //   ),
+      // ),
     );
   }
 

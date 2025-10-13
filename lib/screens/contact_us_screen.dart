@@ -13,6 +13,7 @@ import '../services/email_service.dart';
 import '../theme/app_theme.dart';
 import '../services/contact_numbers_service.dart';
 import '../models/contact_numbers.dart';
+import '../services/recaptcha_service.dart';
 
 class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
@@ -40,6 +41,16 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   void initState() {
     super.initState();
     _fetchContactNumbers();
+    _initializeRecaptcha();
+  }
+
+  Future<void> _initializeRecaptcha() async {
+    try {
+      await RecaptchaService.initialize();
+    } catch (e) {
+      print('Failed to initialize reCAPTCHA: $e');
+      // Continue without reCAPTCHA if initialization fails
+    }
   }
 
   Future<void> _fetchContactNumbers() async {
@@ -135,6 +146,57 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       });
 
       try {
+        // Get reCAPTCHA token
+        final recaptchaToken = await RecaptchaService.getToken();
+
+        if (recaptchaToken == null) {
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                    'reCAPTCHA verification failed. Please try again.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Verify reCAPTCHA token with backend
+        final isRecaptchaValid =
+            await RecaptchaService.verifyTokenWithBackend(recaptchaToken);
+
+        if (!isRecaptchaValid) {
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                    'reCAPTCHA verification failed. Please try again.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
+
         // Send actual email
         final result = await EmailService.sendContactForm(
           name: _nameController.text.trim(),
@@ -809,6 +871,34 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // reCAPTCHA protection notice
+              Row(
+                children: [
+                  Icon(
+                    Icons.security,
+                    size: 16,
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'This form is protected by reCAPTCHA v3',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.color
+                              ?.withOpacity(0.6),
+                          fontSize: 11,
+                        ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -947,10 +1037,10 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildModernSocialButton(
-                    icon: FontAwesomeIcons.twitter,
+                    icon: FontAwesomeIcons.x,
                     label: 'Twitter',
                     onTap: () => _launchUrl('http://www.twitter.com/topjobsLK'),
-                    color: const Color(0xFF1DA1F2),
+                    color: const Color(0xFF000000),
                   ),
                 ),
               ],

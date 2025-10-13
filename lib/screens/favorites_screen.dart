@@ -5,7 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
-import '../widgets/job_rating_widget.dart';
+// import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -536,38 +536,38 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         ),
                       ],
                       // View count (only show if > 0)
-                      if (job.viewCount > 0) ...[
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.visibility,
-                          size: 16,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${job.viewCount} views',
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                      // if (job.viewCount > 0) ...[
+                      //   const SizedBox(width: 8),
+                      //   const Icon(
+                      //     Icons.visibility,
+                      //     size: 16,
+                      //     color: Colors.blue,
+                      //   ),
+                      //   const SizedBox(width: 4),
+                      //   Text(
+                      //     '${job.viewCount} views',
+                      //     style: const TextStyle(
+                      //       color: Colors.blue,
+                      //       fontSize: 10,
+                      //       fontWeight: FontWeight.w500,
+                      //     ),
+                      //   ),
+                      // ],
                     ],
                   ),
                   // Rating row (only show if > 0)
-                  if (job.totalRatings > 0) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        JobRatingWidget(
-                          jobComments: job.comments,
-                          averageRating: job.averageRating,
-                          totalRatings: job.totalRatings,
-                        ),
-                      ],
-                    ),
-                  ],
+                  // if (job.totalRatings > 0) ...[
+                  //   const SizedBox(height: 8),
+                  //   Row(
+                  //     children: [
+                  //       JobRatingWidget(
+                  //         jobComments: job.comments,
+                  //         averageRating: job.averageRating,
+                  //         totalRatings: job.totalRatings,
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ],
                 ],
               ),
             ),

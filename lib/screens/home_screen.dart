@@ -9,7 +9,7 @@ import '../providers/banner_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/banner_slider.dart';
-import '../widgets/job_rating_widget.dart';
+// import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 import 'job_list_screen.dart';
 
@@ -100,8 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const CategorySelector(),
                 const SizedBox(height: 24),
                 _buildSearchBarWithExpandButton(),
-                const SizedBox(height: 24),
-                _buildHotJobs(jobProvider),
+                // const SizedBox(height: 24),
+                // _buildHotJobs(jobProvider),
                 const SizedBox(height: 0),
                 _buildRecentJobs(jobProvider),
               ],
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Search Jobs',
+          'Search Recent Jobs',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -227,63 +227,63 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHotJobs(final JobProvider jobProvider) {
-    // Filter jobs with DEFZZZ guid only
-    final hotJobs = jobProvider.jobsWithViewCounts
-        .where((final job) => job.guid.contains('DEFZZZ'))
-        .take(100)
-        .toList();
+  // Widget _buildHotJobs(final JobProvider jobProvider) {
+  //   // Filter jobs with DEFZZZ guid only
+  //   final hotJobs = jobProvider.jobsWithViewCounts
+  //       .where((final job) => job.guid.contains('DEFZZZ'))
+  //       .take(100)
+  //       .toList();
 
-    if (hotJobs.isEmpty) return const SizedBox.shrink();
+  //   if (hotJobs.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Hot Jobs',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.titleMedium?.color,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF892621),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Top ${hotJobs.length}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: _expandedCards.isNotEmpty
-              ? (hotJobs.any((final job) => job.totalRatings > 0) ? 165 : 160)
-              : 95, // Dynamic height based on expansion state and rating availability
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: hotJobs.length,
-            itemBuilder: (final context, final index) {
-              final job = hotJobs[index];
-              return _buildJobCard(job, isHot: true, isFirstHotJob: index == 0);
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Text(
+  //             'Hot Jobs',
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               fontWeight: FontWeight.bold,
+  //               color: Theme.of(context).textTheme.titleMedium?.color,
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Container(
+  //             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //             decoration: BoxDecoration(
+  //               color: const Color(0xFF892621),
+  //               borderRadius: BorderRadius.circular(12),
+  //             ),
+  //             child: Text(
+  //               'Top ${hotJobs.length}',
+  //               style: const TextStyle(
+  //                 color: Colors.white,
+  //                 fontSize: 10,
+  //                 fontWeight: FontWeight.w600,
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 12),
+  //       SizedBox(
+  //         height: _expandedCards.isNotEmpty
+  //             ? (hotJobs.any((final job) => job.totalRatings > 0) ? 140 : 140)
+  //             : 95, // Dynamic height based on expansion state and rating availability
+  //         child: ListView.builder(
+  //           scrollDirection: Axis.horizontal,
+  //           itemCount: hotJobs.length,
+  //           itemBuilder: (final context, final index) {
+  //             final job = hotJobs[index];
+  //             return _buildJobCard(job, isHot: true, isFirstHotJob: index == 0);
+  //           },
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildRecentJobs(final JobProvider jobProvider) {
     // Group jobs by their source feed and get top 10 from each category
@@ -641,41 +641,42 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 10),
-                            // Rating row (only show if > 0)
-                            Row(
-                              children: [
-                                // View count (only show if > 0)
-                                if (job.viewCount > 0) ...[
-                                  Icon(
-                                    Icons.visibility,
-                                    size: 16,
-                                    color: isFirstHotJob
-                                        ? Colors.white
-                                        : Colors.blue,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${job.viewCount} views',
-                                    style: TextStyle(
-                                      color: isFirstHotJob
-                                          ? Colors.white
-                                          : Colors.blue,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                                if (job.totalRatings > 0) ...[
-                                  const SizedBox(width: 8),
-                                  JobRatingWidget(
-                                    jobComments: job.comments,
-                                    averageRating: job.averageRating,
-                                    totalRatings: job.totalRatings,
-                                  ),
-                                ],
-                              ],
-                            )
+                            // const SizedBox(height: 10),
+                            // // Rating row (only show if > 0)
+                            // Row(
+                            //   children: [
+                            //     // View count (only show if > 0)
+                            //     if (job.viewCount > 0) ...[
+                            //       Icon(
+                            //         Icons.visibility,
+                            //         size: 16,
+                            //         color: isFirstHotJob
+                            //             ? Colors.white
+                            //             : Colors.blue,
+                            //       ),
+                            //       const SizedBox(width: 4),
+                            //       Text(
+                            //         '${job.viewCount} views',
+                            //         style: TextStyle(
+                            //           color: isFirstHotJob
+                            //               ? Colors.white
+                            //               : Colors.blue,
+                            //           fontSize: 10,
+                            //           fontWeight: FontWeight.w500,
+                            //         ),
+                            //       ),
+                            //     ],
+                            //     if (job.totalRatings > 0) ...[
+                            //       const SizedBox(width: 8),
+                            //       JobRatingWidget(
+                            //         jobComments: job.comments,
+                            //         averageRating: job.averageRating,
+                            //         totalRatings: job.totalRatings,
+                            //         isFirstHotJob: isFirstHotJob,
+                            //       ),
+                            //     ],
+                            //   ],
+                            // )
                           ],
                         ],
                       ),

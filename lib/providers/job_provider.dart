@@ -768,6 +768,7 @@ class JobProvider with ChangeNotifier {
               .toLowerCase()
               .contains(_searchQuery.toLowerCase()) ||
           job.company.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          job.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           job.guid.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           job.skills.any((final skill) =>
               skill.toLowerCase().contains(_searchQuery.toLowerCase()));
@@ -814,6 +815,7 @@ class JobProvider with ChangeNotifier {
               .toLowerCase()
               .contains(_searchQuery.toLowerCase()) ||
           job.company.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          job.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           job.guid.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           job.skills.any((final skill) =>
               skill.toLowerCase().contains(_searchQuery.toLowerCase()));
@@ -1338,7 +1340,8 @@ class JobProvider with ChangeNotifier {
     _ratingRefreshTimer?.cancel(); // Cancel existing timer if any
 
     // Refresh ratings every 30 seconds to ensure data consistency
-    _ratingRefreshTimer = Timer.periodic(const Duration(seconds: 30), (final timer) {
+    _ratingRefreshTimer =
+        Timer.periodic(const Duration(seconds: 30), (final timer) {
       // Only refresh if we have jobs loaded
       if (_jobs.isNotEmpty) {
         refreshAllRatings();

@@ -52,8 +52,8 @@ android {
         applicationId "lk.topjobs.app"
         minSdkVersion flutter.minSdkVersion  // Explicit version
         targetSdkVersion 34  // Explicit version
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionCode 33
+        versionName "33.3"
     }
 
     buildTypes {

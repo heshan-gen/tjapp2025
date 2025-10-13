@@ -12,7 +12,7 @@ import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
 import '../screens/category_job_screen.dart';
 import '../services/color_service.dart';
-import '../widgets/job_rating_widget.dart';
+// import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 
 class JobListScreen extends StatefulWidget {
@@ -123,10 +123,6 @@ class _JobListScreenState extends State<JobListScreen> {
                 },
               );
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterBottomSheet,
           ),
         ],
       ),
@@ -254,7 +250,7 @@ class _JobListScreenState extends State<JobListScreen> {
                 controller: _searchController,
                 style: const TextStyle(fontSize: 12),
                 decoration: InputDecoration(
-                  hintText: 'Job title, company, or skills...',
+                  hintText: 'Job title, company, location, or skills...',
                   hintStyle: const TextStyle(fontSize: 12),
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
@@ -294,6 +290,20 @@ class _JobListScreenState extends State<JobListScreen> {
                   }
                 },
               ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFC22820),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: IconButton(
+              icon:
+                  const Icon(Icons.filter_list, size: 20, color: Colors.white),
+              onPressed: _showFilterBottomSheet,
             ),
           ),
           const SizedBox(width: 8),
@@ -684,37 +694,37 @@ class _JobListScreenState extends State<JobListScreen> {
                                   ],
                                 ],
                               ),
-                              const SizedBox(height: 10),
+                              // const SizedBox(height: 10),
                               // Rating (only show if > 0)
-                              Row(
-                                children: [
-                                  // View count (only show if > 0)
-                                  if (job.viewCount > 0) ...[
-                                    const Icon(
-                                      Icons.visibility,
-                                      size: 16,
-                                      color: Colors.blue,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${job.viewCount} views',
-                                      style: const TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                  if (job.totalRatings > 0) ...[
-                                    const SizedBox(width: 8),
-                                    JobRatingWidget(
-                                      jobComments: job.comments,
-                                      averageRating: job.averageRating,
-                                      totalRatings: job.totalRatings,
-                                    ),
-                                  ],
-                                ],
-                              )
+                              // Row(
+                              //   children: [
+                              //     // View count (only show if > 0)
+                              //     if (job.viewCount > 0) ...[
+                              //       const Icon(
+                              //         Icons.visibility,
+                              //         size: 16,
+                              //         color: Colors.blue,
+                              //       ),
+                              //       const SizedBox(width: 4),
+                              //       Text(
+                              //         '${job.viewCount} views',
+                              //         style: const TextStyle(
+                              //           color: Colors.blue,
+                              //           fontSize: 10,
+                              //           fontWeight: FontWeight.w500,
+                              //         ),
+                              //       ),
+                              //     ],
+                              //     if (job.totalRatings > 0) ...[
+                              //       const SizedBox(width: 8),
+                              //       JobRatingWidget(
+                              //         jobComments: job.comments,
+                              //         averageRating: job.averageRating,
+                              //         totalRatings: job.totalRatings,
+                              //       ),
+                              //     ],
+                              //   ],
+                              // )
                             ],
                           ],
                         ),

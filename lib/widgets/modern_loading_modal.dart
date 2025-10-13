@@ -396,7 +396,7 @@ class JobLoadingModal extends StatelessWidget {
           ? 'Fetching $category vacancies...'
           : 'Fetching the latest vacancies...',
       subtitle:
-          '\nPlease wait while we fetch the latest opportunities \n\nJob loading time depends on your Device & Network performance',
+          '\nPlease wait while we fetch the latest opportunities \n\nApplication loading time depends on your Device & Network performance',
       color: color ?? (isDark ? Colors.white : theme.primaryColor),
       showBackground: showBackground,
       size: 70,

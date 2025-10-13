@@ -51,6 +51,6 @@ class BannerResponse {
   }
 
   List<Banner> getPLPBanners() {
-    return banners['ACA'] ?? [];
+    return banners['PLP'] ?? [];
   }
 }
