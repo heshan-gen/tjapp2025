@@ -283,7 +283,7 @@ class _BannerSliderState extends State<BannerSlider> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Find your dream job today',
+                  'Set Wena Job Eka',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,

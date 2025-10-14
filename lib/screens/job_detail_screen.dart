@@ -17,14 +17,20 @@ import '../widgets/image_viewer_dialog.dart';
 // import '../widgets/job_rating_widget.dart';
 
 class JobDetailScreen extends StatefulWidget {
-  const JobDetailScreen({super.key, required this.job});
+  const JobDetailScreen({
+    super.key,
+    required this.job,
+    this.sourceContext = 'job_list',
+  });
   final Job job;
+  final String sourceContext;
 
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
 }
 
-class _JobDetailScreenState extends State<JobDetailScreen> {
+class _JobDetailScreenState extends State<JobDetailScreen>
+    with TickerProviderStateMixin {
   // ignore: unused_field, use_late_for_private_fields_and_variables
   String? _companyInfo;
   // ignore: unused_field
@@ -32,6 +38,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   ScrapedJobContent? _scrapedContent;
   bool _isLoadingScrapedContent = false;
   String? _scrapingError;
+
+  // Swipe animation controllers
+  late AnimationController _indicatorAnimationController;
+  late AnimationController _contentAnimationController;
+  late AnimationController _pageTransitionController;
+  late Animation<double> _indicatorAnimation;
+  late Animation<double> _contentFadeAnimation;
+  late Animation<Offset> _contentSlideAnimation;
+  late Animation<double> _pageTransitionAnimation;
+
+  // Swipe state
+  double _swipeOffset = 0.0;
+  bool _isSwiping = false;
+  String? _swipeDirection;
+  final bool _isTransitioning = false;
 
   LinearGradient _getJobGradient() {
     // Use job's specific gradient colors if available, otherwise fallback to default
@@ -59,6 +80,67 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     super.initState();
     _loadCompanyInfo();
     _loadScrapedContent();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _indicatorAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+
+    _contentAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _pageTransitionController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _indicatorAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _indicatorAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _contentFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _contentAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _contentSlideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _contentAnimationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _pageTransitionAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _pageTransitionController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start content animation on init
+    _contentAnimationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _indicatorAnimationController.dispose();
+    _contentAnimationController.dispose();
+    _pageTransitionController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCompanyInfo() async {
@@ -114,6 +196,498 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Future<void> _retryScraping() async {
     await _loadScrapedContent();
+  }
+
+  void _navigateToJob(final Job job) {
+    // Increment view count for the new job
+    context.read<JobProvider>().incrementViewCount(job.comments);
+
+    // Replace current screen with new job detail screen with custom transition
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder:
+            (final context, final animation, final secondaryAnimation) =>
+                JobDetailScreen(
+          job: job,
+          sourceContext: widget.sourceContext,
+        ),
+        transitionsBuilder: (final context, final animation,
+            final secondaryAnimation, final child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+
+          final tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
+
+  void _handleSwipeStart(final DragStartDetails details) {
+    setState(() {
+      _isSwiping = true;
+      _swipeOffset = 0.0;
+      _swipeDirection = null;
+    });
+    _indicatorAnimationController.forward();
+  }
+
+  void _handleSwipeUpdate(final DragUpdateDetails details) {
+    if (!_isSwiping) return;
+
+    setState(() {
+      _swipeOffset = details.delta.dx;
+      _swipeDirection = details.delta.dx > 0 ? 'right' : 'left';
+    });
+  }
+
+  void _handleSwipeEnd(final DragEndDetails details) {
+    if (!_isSwiping) return;
+
+    final velocity = details.velocity.pixelsPerSecond.dx;
+    const threshold = 100.0; // Minimum swipe distance
+    const velocityThreshold = 300.0; // Minimum velocity for quick swipe
+
+    setState(() {
+      _isSwiping = false;
+    });
+
+    _indicatorAnimationController.reverse();
+
+    // Check if swipe is significant enough
+    if ((_swipeOffset.abs() > threshold ||
+        velocity.abs() > velocityThreshold)) {
+      if (_swipeDirection == 'left' && velocity < -velocityThreshold) {
+        _navigateToNextJob();
+      } else if (_swipeDirection == 'right' && velocity > velocityThreshold) {
+        _navigateToPreviousJob();
+      }
+    }
+
+    setState(() {
+      _swipeOffset = 0.0;
+      _swipeDirection = null;
+    });
+  }
+
+  void _navigateToNextJob() {
+    final jobProvider = context.read<JobProvider>();
+    final jobList = jobProvider.getJobListForNavigation(widget.sourceContext);
+    final currentIndex =
+        jobList.indexWhere((final job) => job.comments == widget.job.comments);
+
+    if (currentIndex < jobList.length - 1) {
+      _navigateToJob(jobList[currentIndex + 1]);
+    }
+  }
+
+  void _navigateToPreviousJob() {
+    final jobProvider = context.read<JobProvider>();
+    final jobList = jobProvider.getJobListForNavigation(widget.sourceContext);
+    final currentIndex =
+        jobList.indexWhere((final job) => job.comments == widget.job.comments);
+
+    if (currentIndex > 0) {
+      _navigateToJob(jobList[currentIndex - 1]);
+    }
+  }
+
+  Widget _buildSwipeIndicators() {
+    if (!_isSwiping) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 100,
+      left: 0,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _indicatorAnimation,
+        builder: (final context, final child) {
+          return Opacity(
+            opacity: _indicatorAnimation.value,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (_swipeDirection == 'right')
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Previous',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_swipeDirection == 'left')
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Next',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransitionOverlay() {
+    if (!_isTransitioning) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _pageTransitionAnimation,
+      builder: (final context, final child) {
+        return Container(
+          color: Colors.black.withOpacity(_pageTransitionAnimation.value * 0.3),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LoadingAnimationWidget.staggeredDotsWave(
+                    color: _getJobGradient().colors.first,
+                    size: 50,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading job details...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNavigationBar(final BuildContext context) {
+    return Consumer<JobProvider>(
+      builder: (final context, final jobProvider, final child) {
+        // Get the appropriate job list based on source context
+        final jobList =
+            jobProvider.getJobListForNavigation(widget.sourceContext);
+        final currentIndex = jobList
+            .indexWhere((final job) => job.comments == widget.job.comments);
+        final previousJob = currentIndex > 0 ? jobList[currentIndex - 1] : null;
+        final nextJob = currentIndex < jobList.length - 1
+            ? jobList[currentIndex + 1]
+            : null;
+        final totalJobs = jobList.length;
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
+            children: [
+              // Progress indicator
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: (currentIndex + 1) / totalJobs,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: _getJobGradient(),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Navigation controls
+              Container(
+                padding: EdgeInsets.zero,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                    // BoxShadow(
+                    //   color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    //   blurRadius: 10,
+                    //   offset: const Offset(0, 2),
+                    // ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Previous button
+                    Expanded(
+                      child: _buildNavigationButton(
+                        context: context,
+                        isEnabled: previousJob != null,
+                        isPrevious: true,
+                        onTap: previousJob != null
+                            ? () => _navigateToJob(previousJob)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Job counter with enhanced design
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: _getJobGradient(),
+                        borderRadius: BorderRadius.circular(5),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                _getJobGradient().colors.first.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            '${currentIndex + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'of $totalJobs',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Next button
+                    Expanded(
+                      child: _buildNavigationButton(
+                        context: context,
+                        isEnabled: nextJob != null,
+                        isPrevious: false,
+                        onTap: nextJob != null
+                            ? () => _navigateToJob(nextJob)
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required final BuildContext context,
+    required final bool isEnabled,
+    required final bool isPrevious,
+    required final VoidCallback? onTap,
+  }) {
+    final jobGradient = _getJobGradient();
+    final gradientColors = jobGradient.colors;
+    final primaryColor = gradientColors.first;
+    final secondaryColor =
+        gradientColors.length > 1 ? gradientColors[1] : primaryColor;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Use white colors in dark mode, gradient colors in light mode
+    final buttonColor =
+        isEnabled ? (isDarkMode ? Colors.white : primaryColor) : Colors.grey;
+    final iconBackgroundColor = isEnabled
+        ? (isDarkMode
+            ? Colors.white.withOpacity(0.2)
+            : primaryColor.withOpacity(0.2))
+        : Colors.grey.withOpacity(0.2);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        decoration: BoxDecoration(
+          gradient: isEnabled
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDarkMode
+                      ? [
+                          Colors.white.withOpacity(0.1),
+                          Colors.white.withOpacity(0.05),
+                        ]
+                      : [
+                          primaryColor.withOpacity(0.1),
+                          secondaryColor.withOpacity(0.05),
+                        ],
+                )
+              : LinearGradient(
+                  colors: [
+                    Colors.grey.withOpacity(0.1),
+                    Colors.grey.withOpacity(0.05),
+                  ],
+                ),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(
+            color: isEnabled
+                ? (isDarkMode
+                    ? Colors.white.withOpacity(0.3)
+                    : primaryColor.withOpacity(0.3))
+                : Colors.grey.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: isEnabled
+              ? [
+                  BoxShadow(
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.1)
+                        : primaryColor.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isPrevious) ...[
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconBackgroundColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: buttonColor,
+                    size: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Previous',
+                style: TextStyle(
+                  color: buttonColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ] else ...[
+              Text(
+                'Next',
+                style: TextStyle(
+                  color: buttonColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconBackgroundColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    color: buttonColor,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   String _generateApplicationUrl() {
@@ -204,42 +778,72 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildJobHeader(context),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _buildJobInfo(),
-                  const SizedBox(height: 20),
-                  _buildJobDescription(),
-                  if (widget.job.requirements !=
-                      'Requirements not specified') ...[
-                    const SizedBox(height: 20),
-                    _buildRequirements(),
-                  ],
-                  if (widget.job.skills.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    _buildSkills(context),
-                  ],
-                  if (widget.job.company.toLowerCase() !=
-                      'company name withheld') ...[
-                    const SizedBox(height: 20),
-                    _buildCompanyInfo(context),
-                  ],
-                  const SizedBox(height: 20),
-                  _buildRatingSection(context),
-                  const SizedBox(
-                      height: 20), // Add bottom padding for fixed footer
-                ],
-              ),
+      body: Stack(
+        children: [
+          GestureDetector(
+            onPanStart: _handleSwipeStart,
+            onPanUpdate: _handleSwipeUpdate,
+            onPanEnd: _handleSwipeEnd,
+            child: AnimatedBuilder(
+              animation: _contentAnimationController,
+              builder: (final context, final child) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  transform:
+                      Matrix4.translationValues(_swipeOffset * 0.1, 0, 0),
+                  child: FadeTransition(
+                    opacity: _contentFadeAnimation,
+                    child: SlideTransition(
+                      position: _contentSlideAnimation,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildNavigationBar(context),
+                            _buildJobHeader(context),
+                            const SizedBox(height: 20),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Column(
+                                children: [
+                                  _buildJobInfo(),
+                                  const SizedBox(height: 20),
+                                  _buildJobDescription(),
+                                  if (widget.job.requirements !=
+                                      'Requirements not specified') ...[
+                                    const SizedBox(height: 20),
+                                    _buildRequirements(),
+                                  ],
+                                  if (widget.job.skills.isNotEmpty) ...[
+                                    const SizedBox(height: 20),
+                                    _buildSkills(context),
+                                  ],
+                                  if (widget.job.company.toLowerCase() !=
+                                      'company name withheld') ...[
+                                    const SizedBox(height: 20),
+                                    _buildCompanyInfo(context),
+                                  ],
+                                  const SizedBox(height: 20),
+                                  _buildRatingSection(context),
+                                  const SizedBox(
+                                      height:
+                                          20), // Add bottom padding for fixed footer
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+          _buildSwipeIndicators(),
+          _buildTransitionOverlay(),
+        ],
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(20),
@@ -745,14 +1349,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Show original description first
-                  Text(
-                    widget.job.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.6,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                  if (widget.job.description != 'Please refer the vacancy...')
+                    Text(
+                      widget.job.description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.6,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                     ),
-                  ),
 
                   // Show loading indicator for scraped content
                   if (_isLoadingScrapedContent) ...[

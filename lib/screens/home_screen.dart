@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, duplicate_ignore
+// ignore_for_file: deprecated_member_use, duplicate_ignore, use_build_context_synchronously
 
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import '../providers/banner_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/banner_slider.dart';
+import '../widgets/theme_selection_dialog.dart';
 // import '../widgets/job_rating_widget.dart';
 import 'job_detail_screen.dart';
 import 'job_list_screen.dart';
@@ -32,7 +33,31 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         context.read<JobProvider>().loadJobs();
         context.read<BannerProvider>().loadBanners();
+        _checkAndShowThemeDialog();
       }
+    });
+  }
+
+  void _checkAndShowThemeDialog() {
+    final themeProvider = context.read<ThemeProvider>();
+    if (themeProvider.isFirstVisit) {
+      // Add a small delay to ensure the UI is fully loaded
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _showThemeSelectionDialog();
+        }
+      });
+    }
+  }
+
+  void _showThemeSelectionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (final context) => const ThemeSelectionDialog(),
+    ).then((final _) {
+      // Mark first visit as completed when dialog is closed
+      context.read<ThemeProvider>().markFirstVisitCompleted();
     });
   }
 
@@ -391,7 +416,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (final context) => JobDetailScreen(job: job),
+                builder: (final context) => JobDetailScreen(
+                  job: job,
+                  sourceContext: 'home',
+                ),
               ),
             );
           },

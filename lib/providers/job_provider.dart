@@ -901,6 +901,46 @@ class JobProvider with ChangeNotifier {
     return locations;
   }
 
+  // Get unique locations from filtered jobs only
+  List<String> getUniqueLocationsFromFilteredJobs() {
+    final Set<String> uniqueLocations = {};
+
+    // Add locations from filtered jobs only
+    for (final job in _filteredJobs) {
+      if (job.location.isNotEmpty) {
+        uniqueLocations.add(job.location);
+      }
+      // Also add "Remote" if job is remote
+      if (job.isRemote) {
+        uniqueLocations.add('Remote');
+      }
+    }
+
+    final List<String> locations = uniqueLocations.toList();
+    locations.sort();
+    return locations;
+  }
+
+  // Get unique locations from category jobs only
+  List<String> getUniqueLocationsFromCategoryJobs() {
+    final Set<String> uniqueLocations = {};
+
+    // Add locations from category jobs only
+    for (final job in _categoryJobs) {
+      if (job.location.isNotEmpty) {
+        uniqueLocations.add(job.location);
+      }
+      // Also add "Remote" if job is remote
+      if (job.isRemote) {
+        uniqueLocations.add('Remote');
+      }
+    }
+
+    final List<String> locations = uniqueLocations.toList();
+    locations.sort();
+    return locations;
+  }
+
   // Helper method to match locations exactly, avoiding partial matches
   bool _matchesLocationExactly(
       final String jobLocation, final String selectedLocation) {
@@ -988,6 +1028,71 @@ class JobProvider with ChangeNotifier {
     return _jobs
         .where((final job) => _favoriteJobIds.contains(job.comments))
         .toList();
+  }
+
+  // Navigation methods for job detail screen
+  Job? getNextJob(final String currentJobComments) {
+    final currentJobs = _getCurrentJobList();
+    final currentIndex = currentJobs
+        .indexWhere((final job) => job.comments == currentJobComments);
+
+    if (currentIndex == -1 || currentIndex >= currentJobs.length - 1) {
+      return null; // No next job available
+    }
+
+    return currentJobs[currentIndex + 1];
+  }
+
+  Job? getPreviousJob(final String currentJobComments) {
+    final currentJobs = _getCurrentJobList();
+    final currentIndex = currentJobs
+        .indexWhere((final job) => job.comments == currentJobComments);
+
+    if (currentIndex <= 0) {
+      return null; // No previous job available
+    }
+
+    return currentJobs[currentIndex - 1];
+  }
+
+  int getCurrentJobIndex(final String currentJobComments) {
+    final currentJobs = _getCurrentJobList();
+    return currentJobs
+        .indexWhere((final job) => job.comments == currentJobComments);
+  }
+
+  int getTotalJobsCount() {
+    return _getCurrentJobList().length;
+  }
+
+  // Helper method to get the current job list based on context
+  List<Job> _getCurrentJobList() {
+    // If we're in category view, return category jobs, otherwise return main jobs
+    if (_filteredCategoryJobs.isNotEmpty) {
+      return _filteredCategoryJobs;
+    } else if (_categoryJobs.isNotEmpty) {
+      return _categoryJobs;
+    } else {
+      return _filteredJobs;
+    }
+  }
+
+  // Method to get job list for navigation based on source context
+  List<Job> getJobListForNavigation(final String sourceContext) {
+    switch (sourceContext) {
+      case 'job_list':
+        return _filteredJobs; // Use filtered jobs from job list screen
+      case 'category':
+        return _filteredCategoryJobs.isNotEmpty
+            ? _filteredCategoryJobs
+            : _categoryJobs;
+      case 'favorites':
+        return getFavoriteJobs();
+      case 'home':
+        return _filteredJobs; // Use filtered jobs from home screen
+      default:
+        return _filteredJobs; // Default to filtered jobs
+    }
   }
 
   // View count methods

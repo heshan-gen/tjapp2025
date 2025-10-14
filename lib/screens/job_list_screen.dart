@@ -459,7 +459,10 @@ class _JobListScreenState extends State<JobListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (final context) => JobDetailScreen(job: job),
+                  builder: (final context) => JobDetailScreen(
+                    job: job,
+                    sourceContext: 'job_list',
+                  ),
                 ),
               );
             },
@@ -1372,7 +1375,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           const SizedBox(height: 8),
           Consumer<JobProvider>(
             builder: (final context, final jobProvider, final child) {
-              final uniqueLocations = jobProvider.getUniqueLocations();
+              final uniqueLocations =
+                  jobProvider.getUniqueLocationsFromFilteredJobs();
               return Container(
                 width: double.infinity,
                 height: 40,

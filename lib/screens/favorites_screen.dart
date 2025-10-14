@@ -293,7 +293,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (final context) => JobDetailScreen(job: job),
+                  builder: (final context) => JobDetailScreen(
+                    job: job,
+                    sourceContext: 'favorites',
+                  ),
                 ),
               );
             },

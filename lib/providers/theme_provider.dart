@@ -3,10 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
+  static const String _firstVisitKey = 'first_visit';
 
   ThemeMode _themeMode = ThemeMode.system;
+  bool _isFirstVisit = true;
 
   ThemeMode get themeMode => _themeMode;
+  bool get isFirstVisit => _isFirstVisit;
 
   bool get isDarkMode {
     if (_themeMode == ThemeMode.system) {
@@ -25,18 +28,20 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   ThemeProvider() {
-    _loadThemeMode();
+    _loadPreferences();
   }
 
-  Future<void> _loadThemeMode() async {
+  Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt(_themeKey) ?? 0;
       _themeMode = ThemeMode.values[themeIndex];
+      _isFirstVisit = prefs.getBool(_firstVisitKey) ?? true;
       notifyListeners();
     } catch (e) {
       // If there's an error loading preferences, use system theme
       _themeMode = ThemeMode.system;
+      _isFirstVisit = true;
     }
   }
 
@@ -84,6 +89,21 @@ class ThemeProvider extends ChangeNotifier {
         return 'Switch to system theme';
       case ThemeMode.system:
         return 'Switch to light mode';
+    }
+  }
+
+  Future<void> markFirstVisitCompleted() async {
+    if (_isFirstVisit) {
+      _isFirstVisit = false;
+      notifyListeners();
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_firstVisitKey, false);
+      } catch (e) {
+        // Handle error silently
+        print('Error saving first visit preference: $e');
+      }
     }
   }
 }
