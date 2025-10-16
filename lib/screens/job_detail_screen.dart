@@ -703,15 +703,15 @@ class _JobDetailScreenState extends State<JobDetailScreen>
     }
   }
 
-  String _getApplicationUrl() {
-    // Only show the anchor link from scraped content
-    if (_scrapedContent?.anchorLink != null &&
-        _scrapedContent!.anchorLink!.isNotEmpty) {
-      return _scrapedContent!.anchorLink!;
-    } else {
-      return 'No anchor link found';
-    }
-  }
+  // String _getApplicationUrl() {
+  //   // Only show the anchor link from scraped content
+  //   if (_scrapedContent?.anchorLink != null &&
+  //       _scrapedContent!.anchorLink!.isNotEmpty) {
+  //     return _scrapedContent!.anchorLink!;
+  //   } else {
+  //     return 'No anchor link found';
+  //   }
+  // }
 
   String _generateApplicationUrl(
       {final String applicationType = 'do_not_receive'}) {
@@ -1215,17 +1215,17 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                 Icons.tag,
               ),
 
-            // Application Button Type
-            if (_scrapedContent != null)
-              _buildInfoRowPair(
-                'Application Type',
-                _getApplicationTypeDisplayText(
-                    _scrapedContent!.applicationType),
-                Icons.touch_app,
-                'Application URL',
-                _getApplicationUrl(),
-                Icons.link,
-              ),
+            // // Application Button Type
+            // if (_scrapedContent != null)
+            //   _buildInfoRowPair(
+            //     'Application Type',
+            //     _getApplicationTypeDisplayText(
+            //         _scrapedContent!.applicationType),
+            //     Icons.touch_app,
+            //     'Application URL',
+            //     _getApplicationUrl(),
+            //     Icons.link,
+            //   ),
 
             // Priority 3-4: Salary and Type (key decision factors)
             // if (widget.job.salary != "Salary Not Specified")
