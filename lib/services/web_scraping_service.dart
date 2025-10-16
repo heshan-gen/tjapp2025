@@ -2,7 +2,8 @@ import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 
 class WebScrapingService {
-  static Future<ScrapedJobContent?> fetchJobDescription(final String url) async {
+  static Future<ScrapedJobContent?> fetchJobDescription(
+      final String url) async {
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -29,36 +30,97 @@ class WebScrapingService {
 
           // Extract images from the remark element
           final List<String> imageUrls = [];
+          String? anchorLink;
           final imgElements = remarkElement.querySelectorAll('img');
           for (final img in imgElements) {
             final src = img.attributes['src'];
             if (src != null && src.isNotEmpty) {
               // Handle relative URLs
+              String fullImageUrl;
               if (src.startsWith('http')) {
-                imageUrls.add(src);
+                fullImageUrl = src;
               } else if (src.startsWith('/')) {
                 final uri = Uri.parse(url);
-                imageUrls.add('${uri.scheme}://${uri.host}$src');
+                fullImageUrl = '${uri.scheme}://${uri.host}$src';
               } else {
-                imageUrls.add('$url/$src');
+                fullImageUrl = '$url/$src';
               }
+              imageUrls.add(fullImageUrl);
+
+              // Check if the image is wrapped in an anchor tag
+              // First check direct parent
+              var parentAnchor = img.parent;
+              if (parentAnchor?.localName == 'a') {
+                final href = parentAnchor?.attributes['href'];
+                if (href != null && href.isNotEmpty) {
+                  // Handle relative URLs for anchor links
+                  if (href.startsWith('http')) {
+                    anchorLink = href;
+                  } else if (href.startsWith('/')) {
+                    final uri = Uri.parse(url);
+                    anchorLink = '${uri.scheme}://${uri.host}$href';
+                  } else {
+                    anchorLink = '$url/$href';
+                  }
+                  break; // Use the first anchor link found
+                }
+              } else {
+                // Check grandparent if direct parent is not anchor
+                parentAnchor = img.parent?.parent;
+                if (parentAnchor?.localName == 'a') {
+                  final href = parentAnchor?.attributes['href'];
+                  if (href != null && href.isNotEmpty) {
+                    // Handle relative URLs for anchor links
+                    if (href.startsWith('http')) {
+                      anchorLink = href;
+                    } else if (href.startsWith('/')) {
+                      final uri = Uri.parse(url);
+                      anchorLink = '${uri.scheme}://${uri.host}$href';
+                    } else {
+                      anchorLink = '$url/$href';
+                    }
+                    break; // Use the first anchor link found
+                  }
+                }
+              }
+            }
+          }
+
+          // If no anchor link found from images, try searching for any anchor tags in remark
+          if (anchorLink == null) {
+            final anchorElements = remarkElement.querySelectorAll('a');
+            for (final anchor in anchorElements) {
+              final href = anchor.attributes['href'];
+              if (href != null && href.isNotEmpty && href.startsWith('http')) {
+                anchorLink = href;
+                break;
+              }
+            }
+          }
+
+          // Check for application buttons in btn-area div
+          String applicationType = 'do_not_receive'; // Default fallback
+          final btnAreaElement = document.querySelector('.btn-area');
+          if (btnAreaElement != null) {
+            final buttonTexts = btnAreaElement.text.toLowerCase();
+            if (buttonTexts.contains('apply by email')) {
+              applicationType = 'email';
+            } else if (buttonTexts.contains('apply by online cv')) {
+              applicationType = 'online_cv';
             }
           }
 
           return ScrapedJobContent(
             description: description,
             imageUrls: imageUrls,
+            applicationType: applicationType,
+            anchorLink: anchorLink,
           );
-        } else {
-          print('Element with id="remark" not found on page');
-        }
-      } else {
-        print('HTTP request failed with status: ${response.statusCode}');
-      }
+        } else {}
+      } else {}
 
       return null;
     } catch (e) {
-      print('Error fetching job description: $e');
       return null;
     }
   }
@@ -67,9 +129,13 @@ class WebScrapingService {
 class ScrapedJobContent {
   final String description;
   final List<String> imageUrls;
+  final String applicationType; // 'email', 'online_cv', or 'do_not_receive'
+  final String? anchorLink; // Link from anchor tag wrapping images
 
   ScrapedJobContent({
     required this.description,
     required this.imageUrls,
+    required this.applicationType,
+    this.anchorLink,
   });
 }

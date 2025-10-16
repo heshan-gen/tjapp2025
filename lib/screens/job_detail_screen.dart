@@ -171,9 +171,10 @@ class _JobDetailScreenState extends State<JobDetailScreen>
     });
 
     try {
-      final applicationUrl = _generateApplicationUrl();
+      // First, get the application type by checking the page
+      final initialUrl = _generateApplicationUrl();
       final scrapedContent =
-          await WebScrapingService.fetchJobDescription(applicationUrl);
+          await WebScrapingService.fetchJobDescription(initialUrl);
 
       if (mounted) {
         setState(() {
@@ -690,7 +691,44 @@ class _JobDetailScreenState extends State<JobDetailScreen>
     );
   }
 
-  String _generateApplicationUrl() {
+  String _getApplicationTypeDisplayText(final String applicationType) {
+    switch (applicationType) {
+      case 'email':
+        return 'Apply by Email';
+      case 'online_cv':
+        return 'Apply by Online CV';
+      case 'do_not_receive':
+      default:
+        return 'Apply Now';
+    }
+  }
+
+  String _getApplicationUrl() {
+    // Only show the anchor link from scraped content
+    if (_scrapedContent?.anchorLink != null &&
+        _scrapedContent!.anchorLink!.isNotEmpty) {
+      return _scrapedContent!.anchorLink!;
+    } else {
+      return 'No anchor link found';
+    }
+  }
+
+  String _generateApplicationUrl(
+      {final String applicationType = 'do_not_receive'}) {
+    String pgValue;
+    switch (applicationType) {
+      case 'email':
+        pgValue = 'tjappave';
+        break;
+      case 'online_cv':
+        pgValue = 'tjappavo';
+        break;
+      case 'do_not_receive':
+      default:
+        pgValue = 'tjappdonotvish';
+        break;
+    }
+
     final Uri toLaunch = Uri(
       scheme: 'https',
       host: 'www.topjobs.lk',
@@ -699,6 +737,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
         'ac': widget.job.applicantCode,
         'jc': widget.job.comments,
         'ec': widget.job.guid,
+        'pg': pgValue,
       },
     );
     return toLaunch.toString();
@@ -1174,6 +1213,18 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                 'Job ID',
                 widget.job.jobId.isNotEmpty ? widget.job.jobId : 'N/A',
                 Icons.tag,
+              ),
+
+            // Application Button Type
+            if (_scrapedContent != null)
+              _buildInfoRowPair(
+                'Application Type',
+                _getApplicationTypeDisplayText(
+                    _scrapedContent!.applicationType),
+                Icons.touch_app,
+                'Application URL',
+                _getApplicationUrl(),
+                Icons.link,
               ),
 
             // Priority 3-4: Salary and Type (key decision factors)
@@ -1872,18 +1923,23 @@ class _JobDetailScreenState extends State<JobDetailScreen>
   // }
 
   Future<void> _launchApplicationUrl() async {
-    final Uri toLaunch = Uri(
-      scheme: 'https',
-      host: 'www.topjobs.lk',
-      path: 'employer/JobAdvertismentServlet',
-      queryParameters: {
-        'ac': widget.job.applicantCode,
-        'jc': widget.job.comments,
-        'ec': widget.job.guid,
-      },
-    );
-
     try {
+      Uri toLaunch;
+
+      // Check if there's an anchor link from scraped content
+      if (_scrapedContent?.anchorLink != null &&
+          _scrapedContent!.anchorLink!.isNotEmpty) {
+        // Use the anchor link from the image
+        toLaunch = Uri.parse(_scrapedContent!.anchorLink!);
+      } else {
+        // Fallback to the generated application URL
+        final String applicationType =
+            _scrapedContent?.applicationType ?? 'do_not_receive';
+        final String applicationUrl =
+            _generateApplicationUrl(applicationType: applicationType);
+        toLaunch = Uri.parse(applicationUrl);
+      }
+
       if (await canLaunchUrl(toLaunch)) {
         await launchUrl(toLaunch, mode: LaunchMode.externalApplication);
       } else {
@@ -1904,6 +1960,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
         'ac': widget.job.applicantCode,
         'jc': widget.job.comments,
         'ec': widget.job.guid,
+        'pg': 'tjappshare',
       },
     );
 
@@ -2064,18 +2121,21 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.rocket_launch_outlined,
                     color: Colors.white,
                     size: 18,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
-                    'Apply Now',
-                    style: TextStyle(
+                    _scrapedContent != null
+                        ? _getApplicationTypeDisplayText(
+                            _scrapedContent!.applicationType)
+                        : 'Apply Now',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

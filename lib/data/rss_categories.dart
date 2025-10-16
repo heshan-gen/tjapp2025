@@ -355,7 +355,8 @@ class RssCategories {
 
   static RssCategory? getCategoryByFeedUrl(final String feedUrl) {
     try {
-      return categories.firstWhere((final category) => category.feedUrl == feedUrl);
+      return categories
+          .firstWhere((final category) => category.feedUrl == feedUrl);
     } catch (e) {
       return null;
     }
