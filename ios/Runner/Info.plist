@@ -47,5 +47,19 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select files for job applications.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to capture documents for job applications.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to microphone for video recordings in job applications.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This app needs access to documents folder to select resume files for job applications.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>This app needs access to downloads folder to select resume files for job applications.</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 </dict>
 </plist>

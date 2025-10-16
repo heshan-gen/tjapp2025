@@ -100,11 +100,68 @@ class WebScrapingService {
 
           // Check for application buttons in btn-area div
           String applicationType = 'do_not_receive'; // Default fallback
+          String? companyEmail; // Extract company email for email applications
           final btnAreaElement = document.querySelector('.btn-area');
           if (btnAreaElement != null) {
             final buttonTexts = btnAreaElement.text.toLowerCase();
             if (buttonTexts.contains('apply by email')) {
               applicationType = 'email';
+              print('DEBUG: Found email application type');
+
+              // Look for txtAVECompanyEmail input field
+              final emailInput = document.getElementById('txtAVECompanyEmail');
+              print('DEBUG: Email input element found: ${emailInput != null}');
+
+              if (emailInput != null) {
+                print(
+                    'DEBUG: Email input attributes: ${emailInput.attributes}');
+                print('DEBUG: Email input text: ${emailInput.text}');
+
+                // Try to get value from different attributes
+                final emailValue = emailInput.attributes['value'] ??
+                    emailInput.attributes['data-value'] ??
+                    emailInput.text.trim();
+
+                // Set companyEmail only if we have a non-empty value
+                companyEmail = emailValue.isNotEmpty ? emailValue : null;
+
+                print('DEBUG: Initial company email: $companyEmail');
+
+                // If still empty, try to find email in nearby text or other elements
+                if (companyEmail == null || companyEmail.isEmpty) {
+                  // Look for email pattern in the input's parent or nearby elements
+                  final parent = emailInput.parent;
+                  if (parent != null) {
+                    final parentText = parent.text;
+                    print('DEBUG: Parent text: $parentText');
+                    final emailRegex = RegExp(
+                        r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b');
+                    final match = emailRegex.firstMatch(parentText);
+                    if (match != null) {
+                      companyEmail = match.group(0);
+                      print('DEBUG: Found email in parent: $companyEmail');
+                    }
+                  }
+                }
+              }
+
+              // If still no email found, search the entire document for email patterns
+              if (companyEmail == null || companyEmail.isEmpty) {
+                print('DEBUG: Searching entire document for email patterns');
+                final emailRegex = RegExp(
+                    r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b');
+                final allText = document.body?.text ?? '';
+                final matches = emailRegex.allMatches(allText);
+                print(
+                    'DEBUG: Found ${matches.length} email matches in document');
+                if (matches.isNotEmpty) {
+                  // Get the first email found
+                  companyEmail = matches.first.group(0);
+                  print('DEBUG: Using first email found: $companyEmail');
+                }
+              }
+
+              print('DEBUG: Final company email: $companyEmail');
             } else if (buttonTexts.contains('apply by online cv')) {
               applicationType = 'online_cv';
             }
@@ -115,6 +172,7 @@ class WebScrapingService {
             imageUrls: imageUrls,
             applicationType: applicationType,
             anchorLink: anchorLink,
+            companyEmail: companyEmail,
           );
         } else {}
       } else {}
@@ -131,11 +189,13 @@ class ScrapedJobContent {
   final List<String> imageUrls;
   final String applicationType; // 'email', 'online_cv', or 'do_not_receive'
   final String? anchorLink; // Link from anchor tag wrapping images
+  final String? companyEmail; // Company email for email applications
 
   ScrapedJobContent({
     required this.description,
     required this.imageUrls,
     required this.applicationType,
     this.anchorLink,
+    this.companyEmail,
   });
 }

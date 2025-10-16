@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/rss_categories.dart';
@@ -51,6 +52,48 @@ class _CategorySelectorState extends State<CategorySelector> {
     super.initState();
     _loadMostVisitedCategories();
     _loadFlaggedCategories();
+  }
+
+  /// Check if the device is a foldable device (Samsung foldable)
+  bool _isFoldableDevice(final BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Check for foldable characteristics
+    // Samsung foldables typically have specific aspect ratios and screen sizes
+    final aspectRatio = screenWidth / screenHeight;
+
+    // Foldable devices often have wider screens when unfolded
+    // or specific screen dimensions that indicate foldable
+    return screenWidth > 600 ||
+        (aspectRatio > 1.5 && screenWidth > 400) ||
+        (screenWidth > 500 && screenHeight > 800);
+  }
+
+  /// Trigger haptic feedback with device compatibility check
+  Future<void> _triggerHapticFeedback({final bool isLongPress = false}) async {
+    try {
+      if (isLongPress) {
+        // For long press, use heavy impact for more noticeable feedback
+        await HapticFeedback.heavyImpact();
+      } else {
+        // For regular tap, use light impact for subtle feedback
+        await HapticFeedback.lightImpact();
+      }
+    } catch (e) {
+      // Fallback to selection click which is more universally supported
+      try {
+        await HapticFeedback.selectionClick();
+      } catch (e) {
+        // Final fallback - vibrate (Android only)
+        try {
+          await HapticFeedback.vibrate();
+        } catch (e) {
+          // If all else fails, silently continue
+          print('Haptic feedback not available on this device');
+        }
+      }
+    }
   }
 
   /// Load most visited categories from SharedPreferences
@@ -126,8 +169,8 @@ class _CategorySelectorState extends State<CategorySelector> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _isFoldableDevice(context) ? 6 : 3,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                     childAspectRatio: 0.85,
@@ -143,7 +186,9 @@ class _CategorySelectorState extends State<CategorySelector> {
                         .getCategoryColor(category.icon, index: index);
 
                     return GestureDetector(
-                      onTap: () {
+                      onTap: () async {
+                        // Add haptic feedback for tap
+                        await _triggerHapticFeedback(isLongPress: false);
                         // Track category visit
                         _trackCategoryVisit(category.feedUrl);
 
@@ -158,7 +203,9 @@ class _CategorySelectorState extends State<CategorySelector> {
                           ),
                         );
                       },
-                      onLongPress: () {
+                      onLongPress: () async {
+                        // Add haptic feedback for long press
+                        await _triggerHapticFeedback(isLongPress: true);
                         _toggleCategoryFlag(category.feedUrl);
                       },
                       child: DecoratedBox(
@@ -172,7 +219,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                             gradient: LinearGradient(
                               colors: [
                                 categoryColor,
-                                categoryColor.withOpacity(0.6),
+                                // categoryColor.withOpacity(0.6),
                                 categoryColor.withOpacity(0.3),
                               ],
                               begin: Alignment.topCenter,
@@ -189,15 +236,15 @@ class _CategorySelectorState extends State<CategorySelector> {
                                 children: [
                                   Column(
                                     children: [
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: 7),
                                       Icon(
                                         _getIconData(category.icon),
                                         color: Colors.white,
                                         size: 30,
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 3),
                                       SizedBox(
-                                        height: 40, // Fixed height for 2 lines
+                                        height: 37, // Fixed height for 2 lines
                                         child: Center(
                                           child: Text(
                                             category.minititle,
@@ -255,7 +302,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                                                 Brightness.dark
                                             ? categoryColor
                                             : Colors.white,
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -347,7 +394,9 @@ class _CategorySelectorState extends State<CategorySelector> {
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () {
+                          onTap: () async {
+                            // Add haptic feedback for tap
+                            await _triggerHapticFeedback(isLongPress: false);
                             setState(() {
                               _showAllCategories = !_showAllCategories;
                             });

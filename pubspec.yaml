@@ -13,6 +13,7 @@ dependencies:
   cloud_firestore: ^4.15.8
   convex_bottom_bar: ^3.2.0
   cupertino_icons: ^1.0.8
+  file_picker: ^10.3.3
   firebase_core: ^2.27.0
   flutter:
     sdk: flutter
@@ -43,6 +44,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
+  # Assets
   assets:
     - assets/images/
     - assets/icons/

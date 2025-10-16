@@ -14,6 +14,7 @@ import '../providers/theme_provider.dart';
 import '../services/company_service.dart';
 import '../services/web_scraping_service.dart';
 import '../widgets/image_viewer_dialog.dart';
+import 'job_apply_screen.dart';
 // import '../widgets/job_rating_widget.dart';
 
 class JobDetailScreen extends StatefulWidget {
@@ -1924,6 +1925,23 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 
   Future<void> _launchApplicationUrl() async {
     try {
+      // Check if application type is email and we have scraped content
+      if (_scrapedContent != null &&
+          _scrapedContent!.applicationType == 'email') {
+        // Navigate to job apply screen for email applications
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (final context) => JobApplyScreen(
+              job: widget.job,
+              scrapedContent: _scrapedContent!,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // For other application types, use the original URL launching logic
       Uri toLaunch;
 
       // Check if there's an anchor link from scraped content
