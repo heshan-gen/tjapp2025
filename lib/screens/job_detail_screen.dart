@@ -13,6 +13,7 @@ import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/company_service.dart';
 import '../services/web_scraping_service.dart';
+import '../services/applied_jobs_service.dart';
 import '../widgets/image_viewer_dialog.dart';
 import 'job_apply_screen.dart';
 // import '../widgets/job_rating_widget.dart';
@@ -39,6 +40,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
   ScrapedJobContent? _scrapedContent;
   bool _isLoadingScrapedContent = false;
   String? _scrapingError;
+  bool _isJobApplied = false;
 
   // Swipe animation controllers
   late AnimationController _indicatorAnimationController;
@@ -81,6 +83,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
     super.initState();
     _loadCompanyInfo();
     _loadScrapedContent();
+    _checkIfJobApplied();
     _initializeAnimations();
   }
 
@@ -198,6 +201,20 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 
   Future<void> _retryScraping() async {
     await _loadScrapedContent();
+  }
+
+  Future<void> _checkIfJobApplied() async {
+    try {
+      final isApplied =
+          await AppliedJobsService.isJobApplied(widget.job.comments);
+      if (mounted) {
+        setState(() {
+          _isJobApplied = isApplied;
+        });
+      }
+    } catch (e) {
+      print('Error checking if job is applied: $e');
+    }
   }
 
   void _navigateToJob(final Job job) {
@@ -1929,7 +1946,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
       if (_scrapedContent != null &&
           _scrapedContent!.applicationType == 'email') {
         // Navigate to job apply screen for email applications
-        Navigator.push(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (final context) => JobApplyScreen(
@@ -1938,6 +1955,11 @@ class _JobDetailScreenState extends State<JobDetailScreen>
             ),
           ),
         );
+
+        // Check if job was applied to when returning from apply screen
+        if (result == true || mounted) {
+          await _checkIfJobApplied();
+        }
         return;
       }
 
@@ -2111,26 +2133,37 @@ class _JobDetailScreenState extends State<JobDetailScreen>
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF37B307),
-                  Color.fromARGB(255, 55, 179, 7),
-                  Color.fromARGB(255, 4, 109, 18),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: _isJobApplied
+                  ? const LinearGradient(
+                      colors: [
+                        Color(0xFF6B7280),
+                        Color(0xFF4B5563),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : const LinearGradient(
+                      colors: [
+                        Color(0xFF37B307),
+                        Color.fromARGB(255, 55, 179, 7),
+                        Color.fromARGB(255, 4, 109, 18),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(5),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF37B307).withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: Offset.zero,
-                ),
-              ],
+              boxShadow: _isJobApplied
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF37B307).withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: Offset.zero,
+                      ),
+                    ],
             ),
             child: ElevatedButton(
-              onPressed: _launchApplicationUrl,
+              onPressed: _isJobApplied ? null : _launchApplicationUrl,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: Colors.transparent,
@@ -2142,17 +2175,21 @@ class _JobDetailScreenState extends State<JobDetailScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.rocket_launch_outlined,
+                  Icon(
+                    _isJobApplied
+                        ? Icons.check_circle
+                        : Icons.rocket_launch_outlined,
                     color: Colors.white,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _scrapedContent != null
-                        ? _getApplicationTypeDisplayText(
-                            _scrapedContent!.applicationType)
-                        : 'Apply Now',
+                    _isJobApplied
+                        ? 'Already Applied'
+                        : (_scrapedContent != null
+                            ? _getApplicationTypeDisplayText(
+                                _scrapedContent!.applicationType)
+                            : 'Apply Now'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,

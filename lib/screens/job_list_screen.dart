@@ -1,19 +1,17 @@
 // ignore_for_file: deprecated_member_use, duplicate_ignore
 
 import 'package:flutter/material.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart'
     show LoadingAnimationWidget;
 import 'package:provider/provider.dart';
 import '../widgets/modern_loading_modal.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../data/rss_categories.dart';
 import '../screens/category_job_screen.dart';
 import '../services/color_service.dart';
+import '../widgets/job_card_widget.dart';
 // import '../widgets/job_rating_widget.dart';
-import 'job_detail_screen.dart';
 
 class JobListScreen extends StatefulWidget {
   const JobListScreen({super.key});
@@ -185,7 +183,7 @@ class _JobListScreenState extends State<JobListScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
                   itemCount: jobProvider.jobsWithViewCounts.length,
                   itemBuilder: (final context, final index) {
                     final job = jobProvider.jobsWithViewCounts[index];
@@ -201,7 +199,22 @@ class _JobListScreenState extends State<JobListScreen> {
                       });
                     }
 
-                    return _buildJobCard(job);
+                    return JobCardWidget(
+                      job: job,
+                      isExpanded: _expandedCards.contains(job.comments),
+                      onToggleExpanded: () {
+                        if (mounted) {
+                          setState(() {
+                            if (_expandedCards.contains(job.comments)) {
+                              _expandedCards.remove(job.comments);
+                            } else {
+                              _expandedCards.add(job.comments);
+                            }
+                          });
+                        }
+                      },
+                      sourceContext: 'job_list',
+                    );
                   },
                 );
               },
@@ -399,441 +412,6 @@ class _JobListScreenState extends State<JobListScreen> {
   //   );
   // }
 
-  Widget _buildJobCard(final Job job) {
-    final isExpanded = _expandedCards.contains(job.comments);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 5),
-      child: Slidable(
-        key: ValueKey(job.comments),
-        endActionPane: ActionPane(
-          motion: const ScrollMotion(),
-          children: [
-            Consumer<JobProvider>(
-              builder: (final context, final jobProvider, final child) {
-                final isFavorite = jobProvider.isJobFavorite(job.comments);
-                return SlidableAction(
-                  onPressed: (final context) {
-                    jobProvider.toggleFavorite(job.comments);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isFavorite
-                              ? 'Removed from favorites'
-                              : 'Added to favorites',
-                        ),
-                        backgroundColor: isFavorite
-                            ? const Color.fromARGB(255, 252, 144, 12)
-                            : const Color.fromARGB(255, 5, 177, 56),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  backgroundColor: isFavorite ? Colors.red : Colors.green,
-                  foregroundColor: Colors.white,
-                  icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                  label: isFavorite ? 'Remove Favorite' : 'Add Favorite',
-                  flex: 1,
-                  borderRadius: BorderRadius.circular(8),
-                  autoClose: true,
-                );
-              },
-            ),
-          ],
-        ),
-        child: Card(
-          elevation: 2,
-          // color: Theme.of(context).cardColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: InkWell(
-            onTap: () {
-              // Increment view count when job is tapped
-              context.read<JobProvider>().incrementViewCount(job.comments);
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (final context) => JobDetailScreen(
-                    job: job,
-                    sourceContext: 'job_list',
-                  ),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Main content row (always visible)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left side content (job details)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    // color:
-                                    //     Theme.of(context).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline
-                                          .withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: job.publisher.isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: CachedNetworkImage(
-                                            imageUrl:
-                                                'https://www.topjobs.lk/logo/${job.publisher}',
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.fitWidth,
-                                            placeholder:
-                                                (final context, final url) =>
-                                                    Container(
-                                              width: 40,
-                                              height: 40,
-                                              color: Colors.grey[300],
-                                              child: const Icon(
-                                                Icons.work,
-                                                color: Colors.grey,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            errorWidget: (final context,
-                                                final url, final error) {
-                                              return const Icon(
-                                                Icons.work,
-                                                color: Colors.white,
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.work,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        job.title
-                                            .trim()
-                                            .replaceAll(RegExp(r'\s+'), ' ')
-                                            .replaceAll('?', '-'),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.color,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        job.company
-                                            .trim()
-                                            .replaceAll(RegExp(r'\s+'), ' '),
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                          fontSize: 12,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Expanded content (only shown when expanded)
-                            if (isExpanded) ...[
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    size: 16,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      job.location,
-                                      style: TextStyle(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    Icons.arrow_circle_right,
-                                    size: 16,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      job.description,
-                                      style: TextStyle(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color,
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  // Job Type
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      // ignore: deprecated_member_use
-                                      color: const Color(0xFFF0BE28)
-                                          .withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      job.type,
-                                      style: const TextStyle(
-                                        color: Color(0xFFF0BE28),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  // Remote indicator after closing date
-                                  if (job.isRemote) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Text(
-                                        'Remote',
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  // Closing Date right next to job type
-                                  if (job.closingDate != null) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.schedule,
-                                      size: 16,
-                                      color: _getClosingDateColor(
-                                          job.closingDate!),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatClosingDate(job.closingDate!),
-                                      style: TextStyle(
-                                        color: _getClosingDateColor(
-                                            job.closingDate!),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              // const SizedBox(height: 10),
-                              // Rating (only show if > 0)
-                              // Row(
-                              //   children: [
-                              //     // View count (only show if > 0)
-                              //     if (job.viewCount > 0) ...[
-                              //       const Icon(
-                              //         Icons.visibility,
-                              //         size: 16,
-                              //         color: Colors.blue,
-                              //       ),
-                              //       const SizedBox(width: 4),
-                              //       Text(
-                              //         '${job.viewCount} views',
-                              //         style: const TextStyle(
-                              //           color: Colors.blue,
-                              //           fontSize: 10,
-                              //           fontWeight: FontWeight.w500,
-                              //         ),
-                              //       ),
-                              //     ],
-                              //     if (job.totalRatings > 0) ...[
-                              //       const SizedBox(width: 8),
-                              //       JobRatingWidget(
-                              //         jobComments: job.comments,
-                              //         averageRating: job.averageRating,
-                              //         totalRatings: job.totalRatings,
-                              //       ),
-                              //     ],
-                              //   ],
-                              // )
-                            ],
-                          ],
-                        ),
-                      ),
-                      // Right side buttons
-                      const SizedBox(width: 12),
-                      Column(
-                        children: [
-                          // Expand/Collapse button
-                          GestureDetector(
-                            onTap: () {
-                              if (mounted) {
-                                setState(() {
-                                  if (isExpanded) {
-                                    _expandedCards.remove(job.comments);
-                                  } else {
-                                    _expandedCards.add(job.comments);
-                                  }
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isExpanded
-                                    ? Icons.expand_less
-                                    : Icons.expand_more,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.color,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          // Favorite indicator
-                          Consumer<JobProvider>(
-                            builder: (final context, final jobProvider,
-                                final child) {
-                              final isFavorite =
-                                  jobProvider.isJobFavorite(job.comments);
-                              return GestureDetector(
-                                onTap: () {
-                                  jobProvider.toggleFavorite(job.comments);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        isFavorite
-                                            ? 'Removed from favorites'
-                                            : 'Added to favorites',
-                                      ),
-                                      backgroundColor: isFavorite
-                                          ? const Color.fromARGB(
-                                              255, 252, 144, 12)
-                                          : const Color.fromARGB(
-                                              255, 5, 177, 56),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: isFavorite
-                                        ? Colors.red.withOpacity(0.1)
-                                        : Colors.grey.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isFavorite
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: isFavorite
-                                        ? Colors.red
-                                        : Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color,
-                                    size: 16,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -933,36 +511,6 @@ class _JobListScreenState extends State<JobListScreen> {
       backgroundColor: Colors.transparent,
       builder: (final context) => const ModernCategoryBottomSheet(),
     );
-  }
-
-  String _formatClosingDate(final DateTime closingDate) {
-    final now = DateTime.now();
-    final difference = closingDate.difference(now);
-
-    if (difference.inDays < 0) {
-      return 'Closed';
-    } else if (difference.inDays == 0) {
-      return 'Closes today';
-    } else if (difference.inDays == 1) {
-      return 'Closes in 1 day';
-    } else {
-      return 'Closes in ${difference.inDays} days';
-    }
-  }
-
-  Color _getClosingDateColor(final DateTime closingDate) {
-    final now = DateTime.now();
-    final difference = closingDate.difference(now);
-
-    if (difference.inDays < 0) {
-      return Colors.grey;
-    } else if (difference.inDays < 3) {
-      return Colors.red;
-    } else if (difference.inDays <= 5) {
-      return Colors.orange;
-    } else {
-      return Colors.green;
-    }
   }
 }
 

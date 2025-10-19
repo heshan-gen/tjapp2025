@@ -25,12 +25,13 @@ if (flutterVersionName == null) {
 
 android {
     namespace "lk.topjobs.app"
-    compileSdk = 36 // Explict version
+    compileSdk = 36 // Explicit version
     ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -51,7 +52,7 @@ android {
     defaultConfig {
         applicationId "lk.topjobs.app"
         minSdkVersion flutter.minSdkVersion  // Explicit version
-        targetSdkVersion 34  // Explicit version
+        targetSdkVersion 33  // Explicit version
         versionCode 33
         versionName "33.3"
     }
@@ -71,4 +72,41 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:34.3.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}
+
+// Suppress Java 8 obsolete warnings from third-party plugins
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << "-Xlint:-options"
+    options.compilerArgs << "-Xlint:-deprecation"
+    options.compilerArgs << "-Xlint:-unchecked"
+}
+
+// Ensure all subprojects use Java 17
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+                
+                // Only apply kotlinOptions for application projects
+                if (project.plugins.hasPlugin('com.android.application')) {
+                    kotlinOptions {
+                        jvmTarget = '17'
+                    }
+                }
+            }
+        }
+        
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs << "-Xlint:-options"
+            options.compilerArgs << "-Xlint:-deprecation"
+            options.compilerArgs << "-Xlint:-unchecked"
+        }
+    }
 }

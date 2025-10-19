@@ -98,6 +98,8 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        fillColor: const Color.fromARGB(255, 255, 255, 255),
+        filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),

@@ -3,14 +3,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/job_list_screen.dart';
+import 'screens/applied_jobs_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/contact_us_screen.dart';
 import 'providers/job_provider.dart';
 import 'providers/banner_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_provider.dart';
+import 'services/notification_service.dart';
+import 'services/workmanager_background_service.dart';
+import 'services/battery_optimization_service.dart';
+import 'screens/background_notification_settings_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_navigation_widget.dart';
 
@@ -19,6 +26,20 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Register background message handler BEFORE initializing notification service
+  // This is critical for handling notifications when app is closed
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Initialize notification service for background notifications
+  await NotificationService().initialize();
+
+  // Initialize WorkManager for background job checking
+  await WorkManagerBackgroundService.initialize();
+  await WorkManagerBackgroundService.startBackgroundTask();
+
+  // Request battery optimization permissions
+  await BatteryOptimizationService.requestAllPermissions();
 
   runApp(const TopJobsApp());
 }
@@ -40,6 +61,14 @@ class TopJobsApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (final _) => BannerProvider()),
         ChangeNotifierProvider(create: (final _) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (final _) {
+            final notificationProvider = NotificationProvider();
+            // Initialize notification provider
+            notificationProvider.initialize();
+            return notificationProvider;
+          },
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (final context, final themeProvider, final child) {
@@ -53,8 +82,11 @@ class TopJobsApp extends StatelessWidget {
             routes: {
               '/home': (final context) => const HomeScreen(),
               '/jobs': (final context) => const JobListScreen(),
+              '/applied': (final context) => const AppliedJobsScreen(),
               '/favorites': (final context) => const FavoritesScreen(),
               '/contact': (final context) => const ContactUsScreen(),
+              '/background-settings': (final context) =>
+                  const BackgroundNotificationSettingsScreen(),
             },
           );
         },
@@ -76,6 +108,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const JobListScreen(),
+    const AppliedJobsScreen(),
     const FavoritesScreen(),
     const ContactUsScreen(),
   ];

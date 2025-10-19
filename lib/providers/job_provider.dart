@@ -8,6 +8,8 @@ import 'dart:math';
 import '../data/rss_categories.dart';
 import '../services/view_count_service.dart';
 import '../services/rating_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:convert';
 
 class Job {
   Job({
@@ -156,6 +158,9 @@ class JobProvider with ChangeNotifier {
   // SharedPreferences key for storing favorites
   static const String _favoritesKey = 'favorite_job_ids';
 
+  // SharedPreferences key for storing known job IDs for new job detection
+  static const String _knownJobIdsKey = 'known_job_ids';
+
   // RSS Feed URLs from topjobs.lk - using same URLs as RssCategories
   static const List<String> _rssFeeds = [
     'http://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
@@ -221,6 +226,9 @@ class JobProvider with ChangeNotifier {
         allJobs.addAll(jobList);
       }
 
+      // Detect new jobs and send notifications (without count tracking)
+      await _detectAndSendNotifications(allJobs);
+
       _jobs = allJobs;
       _filteredJobs = allJobs;
 
@@ -250,6 +258,9 @@ class JobProvider with ChangeNotifier {
 
     try {
       final List<Job> categoryJobs = await _fetchJobsFromRSS(feedUrl);
+
+      // Detect new jobs and send notifications for category jobs (without count tracking)
+      await _detectAndSendNotifications(categoryJobs);
 
       // Store category jobs separately, don't replace the main jobs list
       _categoryJobs = categoryJobs;
@@ -1452,6 +1463,217 @@ class JobProvider with ChangeNotifier {
         refreshAllRatings();
       }
     });
+  }
+
+  /// Detect new jobs and send notifications (without count tracking)
+  Future<void> _detectAndSendNotifications(final List<Job> currentJobs) async {
+    try {
+      // Get current job IDs
+      final currentJobIds =
+          currentJobs.map((final job) => job.comments).toList();
+
+      // Get known job IDs from storage
+      final knownJobIds = await _getKnownJobIds();
+
+      // Find new job IDs (jobs that weren't known before)
+      final newJobIds = currentJobIds
+          .where(
+              (final jobId) => jobId.isNotEmpty && !knownJobIds.contains(jobId))
+          .toList();
+
+      if (newJobIds.isNotEmpty) {
+        print('Found ${newJobIds.length} new jobs - sending notifications');
+
+        // Get the actual job objects for new jobs
+        final newJobs = currentJobs
+            .where((final job) => newJobIds.contains(job.comments))
+            .toList();
+
+        // Send notifications for new jobs
+        await _sendNotificationsForNewJobs(newJobs);
+
+        // Update known job IDs
+        await _updateKnownJobIds(currentJobIds);
+      }
+    } catch (e) {
+      print('Error detecting new jobs: $e');
+    }
+  }
+
+  /// Get known job IDs from storage
+  Future<Set<String>> _getKnownJobIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jobIdsList = prefs.getStringList(_knownJobIdsKey) ?? [];
+      return jobIdsList.toSet();
+    } catch (e) {
+      print('Error getting known job IDs: $e');
+      return <String>{};
+    }
+  }
+
+  /// Update known job IDs in storage
+  Future<void> _updateKnownJobIds(final List<String> currentJobIds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_knownJobIdsKey, currentJobIds);
+    } catch (e) {
+      print('Error updating known job IDs: $e');
+    }
+  }
+
+  /// Send notifications for new jobs
+  Future<void> _sendNotificationsForNewJobs(final List<Job> newJobs) async {
+    try {
+      // Get subscribed categories to filter notifications
+      final prefs = await SharedPreferences.getInstance();
+      final subscribedCategories =
+          prefs.getStringList('subscribed_categories') ?? [];
+
+      if (subscribedCategories.isEmpty) {
+        print('No categories subscribed, skipping notifications');
+        return;
+      }
+
+      for (final job in newJobs) {
+        // Check if job belongs to subscribed categories
+        if (_isJobInSubscribedCategories(job, subscribedCategories)) {
+          await _showLocalNotification(
+            'New Job Available',
+            job.title,
+            {
+              'jobId': job.comments,
+              'category': _getCategoryNameForJob(job, subscribedCategories),
+              'url': job.id,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      print('Error sending notifications for new jobs: $e');
+    }
+  }
+
+  /// Check if job belongs to subscribed categories
+  bool _isJobInSubscribedCategories(
+      final Job job, final List<String> subscribedCategories) {
+    for (final categoryId in subscribedCategories) {
+      final category = RssCategories.getCategoryById(categoryId);
+      if (category != null && job.feedUrl == category.feedUrl) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Get category name for a job
+  String _getCategoryNameForJob(
+      final Job job, final List<String> subscribedCategories) {
+    for (final categoryId in subscribedCategories) {
+      final category = RssCategories.getCategoryById(categoryId);
+      if (category != null && job.feedUrl == category.feedUrl) {
+        return category.minititle;
+      }
+    }
+    return 'Job';
+  }
+
+  /// Show local notification
+  Future<void> _showLocalNotification(final String title, final String body,
+      final Map<String, dynamic> data) async {
+    try {
+      // Use the same notification method as WorkManagerBackgroundService
+      await _showLocalNotificationDirect(title, body, data);
+      print('Notification sent: $title');
+    } catch (e) {
+      print('Error sending notification: $e');
+    }
+  }
+
+  /// Show local notification directly
+  Future<void> _showLocalNotificationDirect(final String title,
+      final String body, final Map<String, dynamic> data) async {
+    try {
+      final FlutterLocalNotificationsPlugin localNotifications =
+          FlutterLocalNotificationsPlugin();
+
+      // Initialize local notifications with proper settings
+      const AndroidInitializationSettings androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const DarwinInitializationSettings iosSettings =
+          DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+
+      const InitializationSettings settings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+
+      await localNotifications.initialize(settings);
+
+      // Create notification channel for Android with high importance
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'job_alerts',
+        'Job Alerts',
+        description: 'Notifications for new job opportunities',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          localNotifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImplementation != null) {
+        await androidImplementation.createNotificationChannel(channel);
+      }
+
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        'job_alerts',
+        'Job Alerts',
+        channelDescription: 'Notifications for new job opportunities',
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        enableVibration: true,
+        playSound: true,
+        showWhen: true,
+        autoCancel: true,
+        ongoing: false,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.message,
+      );
+
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: 'default',
+        badgeNumber: 1,
+      );
+
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        details,
+        payload: jsonEncode(data),
+      );
+    } catch (e) {
+      print('Error showing local notification: $e');
+    }
   }
 
   /// Dispose resources

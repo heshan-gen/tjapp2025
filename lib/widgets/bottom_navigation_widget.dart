@@ -49,6 +49,11 @@ class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
           title: 'All Jobs',
         ),
         TabItem(
+          icon: Icons.check_circle_outline,
+          activeIcon: Icons.check_circle,
+          title: 'Applied',
+        ),
+        TabItem(
           icon: Icons.favorite_border,
           activeIcon: Icons.favorite,
           title: 'Favorites',

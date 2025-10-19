@@ -1,18 +1,20 @@
 // ignore_for_file: deprecated_member_use, duplicate_ignore, use_build_context_synchronously
 
-import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/modern_loading_modal.dart';
 import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/banner_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/notification_provider.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/banner_slider.dart';
 import '../widgets/theme_selection_dialog.dart';
+import '../widgets/job_card_widget.dart';
 // import '../widgets/job_rating_widget.dart';
-import 'job_detail_screen.dart';
 import 'job_list_screen.dart';
+import 'notification_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,21 +23,56 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final Set<String> _expandedCards = <String>{};
-  Color? _randomHotJobColor;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _randomHotJobColor = _generateRandomColor();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((final _) {
       if (mounted) {
-        context.read<JobProvider>().loadJobs();
+        _loadJobsAndRefreshCount();
         context.read<BannerProvider>().loadBanners();
         _checkAndShowThemeDialog();
+        _startRefreshTimer();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _startRefreshTimer();
+    } else if (state == AppLifecycleState.paused) {
+      // Stop timer when app goes to background to save battery
+      _refreshTimer?.cancel();
+    }
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (final timer) {
+      if (mounted) {
+        // Timer kept for potential future use
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _loadJobsAndRefreshCount() async {
+    // Load jobs
+    await context.read<JobProvider>().loadJobs();
   }
 
   void _checkAndShowThemeDialog() {
@@ -62,22 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  Color _generateRandomColor() {
-    final Random random = Random();
-    // Generate a random pastel color with good contrast for white text
-    return Color.fromARGB(
-      255,
-      random.nextInt(80) + 100, // Red: 100-179 (pastel range)
-      random.nextInt(80) + 100, // Green: 100-179 (pastel range)
-      random.nextInt(80) + 100, // Blue: 100-179 (pastel range)
-    );
-  }
-
-  @override
   Widget build(final BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -90,6 +111,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
+          Consumer<NotificationProvider>(
+            builder: (final context, final notificationProvider, final child) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      notificationProvider.notificationsEnabled
+                          ? Icons.notifications_active
+                          : Icons.notifications_off,
+                    ),
+                    tooltip: 'Notification Settings',
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (final context) =>
+                              const NotificationSettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
           Consumer<ThemeProvider>(
             builder: (final context, final themeProvider, final child) {
               return IconButton(
@@ -383,433 +429,25 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: recentJobs.length,
           itemBuilder: (final context, final index) {
             final job = recentJobs[index];
-            return _buildJobCard(job);
+            return JobCardWidget(
+              job: job,
+              isExpanded: _expandedCards.contains(job.comments),
+              onToggleExpanded: () {
+                if (mounted) {
+                  setState(() {
+                    if (_expandedCards.contains(job.comments)) {
+                      _expandedCards.remove(job.comments);
+                    } else {
+                      _expandedCards.add(job.comments);
+                    }
+                  });
+                }
+              },
+              sourceContext: 'home',
+            );
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildJobCard(final Job job,
-      {final bool isHot = false, final bool isFirstHotJob = false}) {
-    final isExpanded = _expandedCards.contains(job.comments);
-
-    return Container(
-      width: isHot ? 320 : double.infinity,
-      margin: EdgeInsets.only(
-        right: isHot ? 5 : 0,
-        bottom: 5,
-      ),
-      child: Card(
-        elevation: 2,
-        color: isFirstHotJob
-            ? (_randomHotJobColor ?? const Color.fromARGB(255, 138, 14, 5))
-            : null,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: InkWell(
-          onTap: () {
-            // Increment view count when job is tapped
-            context.read<JobProvider>().incrementViewCount(job.comments);
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (final context) => JobDetailScreen(
-                  job: job,
-                  sourceContext: 'home',
-                ),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Main content row (always visible)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Left side content (job details)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  // color: Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: isFirstHotJob
-                                      ? Colors.white
-                                      : Theme.of(context).cardColor,
-                                  border: Border.all(
-                                    color: isFirstHotJob
-                                        ? Colors.white
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .outline
-                                            .withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: job.publisher.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          'https://www.topjobs.lk/logo/${job.publisher}',
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.fitWidth,
-                                          errorBuilder: (final context,
-                                              final error, final stackTrace) {
-                                            return const Icon(
-                                              Icons.work,
-                                              color: Colors.white,
-                                            );
-                                          },
-                                        ),
-                                      )
-                                    : Icon(
-                                        Icons.work,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      job.title
-                                          .trim()
-                                          .replaceAll(RegExp(r'\s+'), ' ')
-                                          .replaceAll('?', '-'),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        color: isFirstHotJob
-                                            ? Colors.white
-                                            : Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.color,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      job.company
-                                          .trim()
-                                          .replaceAll(RegExp(r'\s+'), ' '),
-                                      style: TextStyle(
-                                        color: isFirstHotJob
-                                            ? Colors.white.withOpacity(0.9)
-                                            : Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.color,
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Expanded content (only shown when expanded)
-                          if (isExpanded) ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: isFirstHotJob
-                                      ? Colors.white
-                                      : Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    job.location,
-                                    style: TextStyle(
-                                      color: isFirstHotJob
-                                          ? Colors.white
-                                          : Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Icon(
-                                  Icons.arrow_circle_right,
-                                  size: 16,
-                                  color: isFirstHotJob
-                                      ? Colors.white
-                                      : Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    job.description,
-                                    style: TextStyle(
-                                      color: isFirstHotJob
-                                          ? Colors.white
-                                          : Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                // Job Type
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    // ignore: deprecated_member_use
-                                    color: isFirstHotJob
-                                        ? Colors.white.withOpacity(0.2)
-                                        : const Color(0xFFF0BE28)
-                                            .withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    job.type,
-                                    style: TextStyle(
-                                      color: isFirstHotJob
-                                          ? Colors.white
-                                          : const Color(0xFFF0BE28),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-
-                                // Remote indicator after closing date
-                                if (job.isRemote) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      // ignore: deprecated_member_use
-                                      color: isFirstHotJob
-                                          ? Colors.white.withOpacity(0.1)
-                                          : Colors.green.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      'Remote',
-                                      style: TextStyle(
-                                        color: isFirstHotJob
-                                            ? Colors.white
-                                            : Colors.green,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                // Closing Date right next to job type
-                                if (job.closingDate != null) ...[
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.schedule,
-                                    size: 16,
-                                    color: isFirstHotJob
-                                        ? Colors.white
-                                        : _getClosingDateColor(
-                                            job.closingDate!),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatClosingDate(job.closingDate!),
-                                    style: TextStyle(
-                                      color: isFirstHotJob
-                                          ? Colors.white
-                                          : _getClosingDateColor(
-                                              job.closingDate!),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            // const SizedBox(height: 10),
-                            // // Rating row (only show if > 0)
-                            // Row(
-                            //   children: [
-                            //     // View count (only show if > 0)
-                            //     if (job.viewCount > 0) ...[
-                            //       Icon(
-                            //         Icons.visibility,
-                            //         size: 16,
-                            //         color: isFirstHotJob
-                            //             ? Colors.white
-                            //             : Colors.blue,
-                            //       ),
-                            //       const SizedBox(width: 4),
-                            //       Text(
-                            //         '${job.viewCount} views',
-                            //         style: TextStyle(
-                            //           color: isFirstHotJob
-                            //               ? Colors.white
-                            //               : Colors.blue,
-                            //           fontSize: 10,
-                            //           fontWeight: FontWeight.w500,
-                            //         ),
-                            //       ),
-                            //     ],
-                            //     if (job.totalRatings > 0) ...[
-                            //       const SizedBox(width: 8),
-                            //       JobRatingWidget(
-                            //         jobComments: job.comments,
-                            //         averageRating: job.averageRating,
-                            //         totalRatings: job.totalRatings,
-                            //         isFirstHotJob: isFirstHotJob,
-                            //       ),
-                            //     ],
-                            //   ],
-                            // )
-                          ],
-                        ],
-                      ),
-                    ),
-                    // Right side buttons
-                    const SizedBox(width: 12),
-                    Column(
-                      children: [
-                        // Expand/Collapse button
-                        GestureDetector(
-                          onTap: () {
-                            if (mounted) {
-                              setState(() {
-                                if (isExpanded) {
-                                  _expandedCards.remove(job.comments);
-                                } else {
-                                  _expandedCards.add(job.comments);
-                                }
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isExpanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                              color: isFirstHotJob
-                                  ? Colors.white
-                                  : Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // Favorite indicator
-                        Consumer<JobProvider>(
-                          builder:
-                              (final context, final jobProvider, final child) {
-                            final isFavorite =
-                                jobProvider.isJobFavorite(job.comments);
-                            return GestureDetector(
-                              onTap: () {
-                                jobProvider.toggleFavorite(job.comments);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isFavorite
-                                          ? 'Removed from favorites'
-                                          : 'Added to favorites',
-                                    ),
-                                    backgroundColor: isFavorite
-                                        ? const Color.fromARGB(
-                                            255, 252, 144, 12)
-                                        : const Color.fromARGB(255, 5, 177, 56),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: isFavorite
-                                      ? Colors.red.withOpacity(0.1)
-                                      : Colors.grey.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isFavorite
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isFavorite
-                                      ? Colors.red
-                                      : isFirstHotJob
-                                          ? Colors.white
-                                          : Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                  size: 16,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -826,36 +464,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return '${difference.inDays} days ago';
     } else {
       return '${(difference.inDays / 7).floor()} weeks ago';
-    }
-  }
-
-  String _formatClosingDate(final DateTime closingDate) {
-    final now = DateTime.now();
-    final difference = closingDate.difference(now);
-
-    if (difference.inDays < 0) {
-      return 'Closed';
-    } else if (difference.inDays == 0) {
-      return 'Closes today';
-    } else if (difference.inDays == 1) {
-      return 'Closes in 1 day';
-    } else {
-      return '${difference.inDays} days';
-    }
-  }
-
-  Color _getClosingDateColor(final DateTime closingDate) {
-    final now = DateTime.now();
-    final difference = closingDate.difference(now);
-
-    if (difference.inDays < 0) {
-      return Colors.grey;
-    } else if (difference.inDays < 3) {
-      return Colors.red;
-    } else if (difference.inDays <= 5) {
-      return Colors.orange;
-    } else {
-      return Colors.green;
     }
   }
 

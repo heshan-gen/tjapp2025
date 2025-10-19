@@ -1,11 +1,16 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/email_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../providers/job_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/web_scraping_service.dart';
+import '../services/applied_jobs_service.dart';
+import '../services/google_sheets_service.dart';
+import '../services/google_drive_service.dart';
 
 class JobApplyScreen extends StatefulWidget {
   const JobApplyScreen({
@@ -32,6 +37,12 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
   final TextEditingController _linkedinController = TextEditingController();
   final TextEditingController _coverLetterController = TextEditingController();
   final TextEditingController _companyEmailController = TextEditingController();
+
+  // Focus nodes for navigation
+  final FocusNode _fullNameFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _linkedinFocus = FocusNode();
 
   // File upload state
   File? _resumeFile;
@@ -130,9 +141,15 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
 
         if (!isSupported) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select a PDF, DOC, or DOCX file'),
+            SnackBar(
+              content: const Text('Please select a PDF, DOC, or DOCX file'),
               backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
             ),
           );
           return;
@@ -148,6 +165,12 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             SnackBar(
               content: Text('File selected: ${file.name}'),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
             ),
           );
         } else {
@@ -155,9 +178,15 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No file selected'),
+          SnackBar(
+            content: const Text('No file selected'),
             backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -171,16 +200,28 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         SnackBar(
           content: Text('Error picking file: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }
   }
 
   // Validation methods
+  bool _isValidEmail(final String email) {
+    return RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        .hasMatch(email);
+  }
+
   bool _isStep1Valid() {
     return _fullNameController.text.isNotEmpty &&
         _phoneController.text.isNotEmpty &&
-        _emailController.text.isNotEmpty;
+        _emailController.text.isNotEmpty &&
+        _isValidEmail(_emailController.text);
   }
 
   bool _isStep2Valid() {
@@ -200,7 +241,20 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         context: context,
         barrierDismissible: false,
         builder: (final context) => const Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Sending job application...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 
@@ -219,28 +273,126 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         resumeFile: _resumeFile,
       );
 
-      // Close loading dialog
-      Navigator.of(context).pop();
-
       if (result.success) {
+        // Save job as applied
+        final jobDetails = {
+          'title': widget.job.title,
+          'company': widget.job.company,
+          'location': widget.job.location,
+          'jobId': widget.job.jobId,
+          'applicantName': _fullNameController.text,
+          'applicantEmail': _emailController.text,
+          'applicantPhone': _phoneController.text,
+          'coverLetter': _coverLetterController.text,
+          'resumeFileName': _resumeFileName,
+        };
+
+        await AppliedJobsService.saveAppliedJob(
+            widget.job.comments, jobDetails);
+
+        // Save document file path if resume file exists
+        if (_resumeFile != null) {
+          await AppliedJobsService.saveDocumentPath(
+              widget.job.comments, _resumeFile!.path);
+        }
+
+        // Upload resume to Google Drive and save to Google Sheets
+        try {
+          String resumeDriveLink = 'No file uploaded';
+
+          // Upload resume to Google Drive if file exists
+          if (_resumeFile != null) {
+            try {
+              final driveLink = await GoogleDriveService.uploadResumeFile(
+                resumeFile: _resumeFile!,
+                applicantName: _fullNameController.text,
+                jobTitle: widget.job.title,
+                companyName: widget.job.company,
+              );
+
+              if (driveLink != null) {
+                resumeDriveLink = driveLink;
+                print('Resume uploaded to Google Drive: $driveLink');
+              } else {
+                print('Failed to upload resume to Google Drive');
+              }
+            } catch (e) {
+              print('Google Drive upload failed: $e');
+              // Check if it's the storage quota error
+              if (e.toString().contains('storage quota')) {
+                resumeDriveLink =
+                    'Drive upload disabled - service account limitation';
+                print(
+                    'Note: Ensure service account has access to shared drive');
+              } else if (e.toString().contains('not found')) {
+                resumeDriveLink = 'Shared drive not found - check folder ID';
+                print('Note: Verify shared drive ID and permissions');
+              } else {
+                resumeDriveLink = 'Drive upload error: ${e.toString()}';
+              }
+            }
+          }
+
+          final sheetsResult = await GoogleSheetsService.saveJobApplication(
+            applicantName: _fullNameController.text,
+            applicantEmail: _emailController.text,
+            applicantPhone: _phoneController.text,
+            linkedinId: _linkedinController.text,
+            coverLetter: _coverLetterController.text,
+            jobTitle: widget.job.title,
+            companyName: widget.job.company,
+            jobId: widget.job.jobId,
+            jobLocation: widget.job.location,
+            resumeFileName: _resumeFileName ?? 'No file',
+            resumeFilePath: _resumeFile?.path ?? 'No file path',
+            resumeDriveLink: resumeDriveLink,
+            companyEmail: _companyEmailController.text,
+          );
+
+          if (sheetsResult) {
+            print('Job application saved to Google Sheets successfully');
+          } else {
+            print('Failed to save job application to Google Sheets');
+          }
+        } catch (e) {
+          print('Error saving to Google Sheets: $e');
+          // Don't show error to user as email was sent successfully
+        }
+
+        // Close loading dialog
+        Navigator.of(context).pop();
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
           ),
         );
 
-        // Navigate back to job detail screen
-        Navigator.of(context).pop();
+        // Navigate back to job detail screen with success result
+        Navigator.of(context).pop(true);
       } else {
+        // Close loading dialog
+        Navigator.of(context).pop();
+
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: const Duration(seconds: 5),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -254,7 +406,12 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         SnackBar(
           content: Text('Error sending application: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           duration: const Duration(seconds: 5),
+          margin: const EdgeInsets.all(16),
         ),
       );
     } finally {
@@ -272,6 +429,13 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
     _linkedinController.dispose();
     _coverLetterController.dispose();
     _companyEmailController.dispose();
+
+    // Dispose focus nodes
+    _fullNameFocus.dispose();
+    _phoneFocus.dispose();
+    _emailFocus.dispose();
+    _linkedinFocus.dispose();
+
     super.dispose();
   }
 
@@ -300,306 +464,321 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Consumer<ThemeProvider>(
+            builder: (final context, final themeProvider, final child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeIcon, color: Colors.white),
+                tooltip: themeProvider.themeTooltip,
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // Job Information Card
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: _getJobGradient(),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: _getJobGradient().colors.first.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            // Scrollable content area
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                    // Job Information Card
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: _getJobGradient(),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                _getJobGradient().colors.first.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          child: widget.job.publisher.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.network(
-                                    'https://www.topjobs.lk/logo/${widget.job.publisher}',
-                                    width: 44,
-                                    height: 24,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (final context, final error,
-                                        final stackTrace) {
-                                      return const Icon(
-                                        Icons.work,
-                                        color: Colors.white,
-                                        size: 24,
-                                      );
-                                    },
-                                    loadingBuilder: (final context, final child,
-                                        final loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                      Colors.white),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                )
-                              : const Icon(
-                                  Icons.work,
+                                  child: widget.job.publisher.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: Image.network(
+                                            'https://www.topjobs.lk/logo/${widget.job.publisher}',
+                                            width: 44,
+                                            height: 24,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (final context,
+                                                final error, final stackTrace) {
+                                              return const Icon(
+                                                Icons.work,
+                                                color: Colors.white,
+                                                size: 24,
+                                              );
+                                            },
+                                            loadingBuilder: (final context,
+                                                final child,
+                                                final loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return const SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    width: 12,
+                                                    height: 12,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                                  Color>(
+                                                              Colors.white),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.work,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.job.title
+                                            .trim()
+                                            .replaceAll(RegExp(r'\s+'), ' ')
+                                            .replaceAll('?', '-'),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        widget.job.company,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white.withOpacity(0.9),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                _buildInfoChip(
+                                  icon: Icons.tag,
+                                  text: 'Job ID: ${widget.job.jobId}',
                                   color: Colors.white,
-                                  size: 24,
                                 ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.job.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                const SizedBox(width: 8),
+                                _buildInfoChip(
+                                  icon: Icons.location_on,
+                                  text: widget.job.location,
                                   color: Colors.white,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                widget.job.company,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _buildInfoChip(
-                          icon: Icons.tag,
-                          text: 'Job ID: ${widget.job.jobId}',
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildInfoChip(
-                          icon: Icons.location_on,
-                          text: widget.job.location,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
-            // Horizontal Stepper
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: SizedBox(
-                height: 100,
-                child: Row(
-                  children: [
-                    // Step 1
-                    Expanded(
-                      child: _buildHorizontalStep(
-                        stepNumber: 1,
-                        title: 'Personal\nInformation',
-                        isActive: _currentStep == 0,
-                        isCompleted: _currentStep > 0,
-                        onTap: () => setState(() => _currentStep = 0),
+                    // Horizontal Stepper
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: SizedBox(
+                        height: 100,
+                        child: Row(
+                          children: [
+                            // Step 1
+                            Expanded(
+                              child: _buildHorizontalStep(
+                                stepNumber: 1,
+                                title: 'Personal\nInformation',
+                                isActive: _currentStep == 0,
+                                isCompleted: _currentStep > 0,
+                                onTap: () => setState(() => _currentStep = 0),
+                              ),
+                            ),
+                            _buildStepConnector(_currentStep > 0),
+                            // Step 2
+                            Expanded(
+                              child: _buildHorizontalStep(
+                                stepNumber: 2,
+                                title: 'Additional\nInformation',
+                                isActive: _currentStep == 1,
+                                isCompleted: _currentStep > 1,
+                                onTap: () => setState(() => _currentStep = 1),
+                              ),
+                            ),
+                            _buildStepConnector(_currentStep > 1),
+                            // Step 3
+                            Expanded(
+                              child: _buildHorizontalStep(
+                                stepNumber: 3,
+                                title: 'Review &\nSubmit',
+                                isActive: _currentStep == 2,
+                                isCompleted: false,
+                                onTap: () => setState(() => _currentStep = 2),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    _buildStepConnector(_currentStep > 0),
-                    // Step 2
-                    Expanded(
-                      child: _buildHorizontalStep(
-                        stepNumber: 2,
-                        title: 'Additional\nInformation',
-                        isActive: _currentStep == 1,
-                        isCompleted: _currentStep > 1,
-                        onTap: () => setState(() => _currentStep = 1),
-                      ),
-                    ),
-                    _buildStepConnector(_currentStep > 1),
-                    // Step 3
-                    Expanded(
-                      child: _buildHorizontalStep(
-                        stepNumber: 3,
-                        title: 'Review &\nSubmit',
-                        isActive: _currentStep == 2,
-                        isCompleted: false,
-                        onTap: () => setState(() => _currentStep = 2),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
-            // Step Content - Flexible layout to prevent overflow
-            Flexible(
-              child: Container(
-                margin: EdgeInsets.zero,
-                decoration: const BoxDecoration(
-                    // color: Theme.of(context).cardTheme.color,
-                    // borderRadius: BorderRadius.circular(0),
-                    // boxShadow: [
-                    //   BoxShadow(
-                    //     color: Colors.black.withOpacity(0.05),
-                    //     blurRadius: 10,
-                    //     offset: const Offset(0, 2),
-                    //   ),
-                    // ],
-                    ),
-                child: Column(
-                  children: [
-                    // Step content - scrollable to prevent overflow
-                    Expanded(
-                      child: SingleChildScrollView(
+                    // Step Content - Now part of the main scrollable area
+                    Container(
+                      margin: EdgeInsets.zero,
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 17),
                         child: _getStepContent(),
                       ),
                     ),
 
-                    // Navigation buttons - fixed at bottom
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        // color: Theme.of(context).cardTheme.color,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(12),
-                          bottomRight: Radius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          if (_currentStep > 0)
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _previousStep,
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                      color:
-                                          Color.fromARGB(255, 223, 223, 223)),
-                                  foregroundColor: Colors.grey.shade700,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.arrow_back,
-                                      size: 18,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Previous'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          if (_currentStep > 0) const SizedBox(width: 16),
-                          Expanded(
-                            child: _isButtonEnabled()
-                                ? DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: _getJobGradient(),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ElevatedButton(
-                                      onPressed: _getNextButtonAction(),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        foregroundColor: Colors.white,
-                                        shadowColor: Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(_getNextButtonText()),
-                                          const SizedBox(width: 8),
-                                          if (_currentStep == 2)
-                                            const Icon(
-                                              Icons.send,
-                                              size: 18,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : ElevatedButton(
-                                    onPressed: null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.grey.shade400,
-                                      foregroundColor: Colors.white,
-                                      shadowColor: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(_getNextButtonText()),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          _currentStep == 2
-                                              ? Icons.send
-                                              : Icons.arrow_forward,
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Bottom padding to prevent content from being hidden behind fixed buttons
+                    const SizedBox(height: 100),
                   ],
                 ),
+              ),
+            ),
+
+            // Fixed Navigation buttons at bottom
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _previousStep,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: Color.fromARGB(255, 223, 223, 223)),
+                          foregroundColor: Colors.grey.shade700,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_back,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Previous'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_currentStep > 0) const SizedBox(width: 16),
+                  Expanded(
+                    child: _isButtonEnabled()
+                        ? DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: _getJobGradient(),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _getNextButtonAction(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(_getNextButtonText()),
+                                  const SizedBox(width: 8),
+                                  if (_currentStep == 2)
+                                    const Icon(
+                                      Icons.send,
+                                      size: 18,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade400,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_getNextButtonText()),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  _currentStep == 2
+                                      ? Icons.send
+                                      : Icons.arrow_forward,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -775,40 +954,36 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _fullNameController,
+          focusNode: _fullNameFocus,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
             prefixIcon: const Icon(Icons.person),
-            prefixIconColor: Colors.grey.shade600,
+            prefixIconColor:
+                Theme.of(context).inputDecorationTheme.prefixIconColor ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
             prefixStyle: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             labelText: 'Enter your full name',
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade400,
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
+            labelStyle: Theme.of(context).inputDecorationTheme.labelStyle ??
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            border: Theme.of(context).inputDecorationTheme.border,
+            focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
+            enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
             floatingLabelBehavior: FloatingLabelBehavior.never,
           ),
+          textInputAction: TextInputAction.next,
           onChanged: (final value) => setState(() {}),
+          onFieldSubmitted: (final value) {
+            _phoneFocus.requestFocus();
+          },
         ),
         const SizedBox(height: 16),
 
@@ -832,41 +1007,37 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _phoneController,
+          focusNode: _phoneFocus,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
             labelText: 'Enter your phone number',
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-            prefixIconColor: Colors.grey.shade600,
+            labelStyle: Theme.of(context).inputDecorationTheme.labelStyle ??
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            prefixIconColor:
+                Theme.of(context).inputDecorationTheme.prefixIconColor ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
             prefixStyle: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             prefixIcon: const Icon(Icons.phone),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade400,
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
+            border: Theme.of(context).inputDecorationTheme.border,
+            focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
+            enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
             floatingLabelBehavior: FloatingLabelBehavior.never,
           ),
           keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
           onChanged: (final value) => setState(() {}),
+          onFieldSubmitted: (final value) {
+            _emailFocus.requestFocus();
+          },
         ),
         const SizedBox(height: 16),
 
@@ -890,41 +1061,62 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _emailController,
+          focusNode: _emailFocus,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
             labelText: 'Enter your email address',
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-            prefixIconColor: Colors.grey.shade600,
+            labelStyle: Theme.of(context).inputDecorationTheme.labelStyle ??
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            prefixIconColor:
+                Theme.of(context).inputDecorationTheme.prefixIconColor ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
             prefixStyle: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             prefixIcon: const Icon(Icons.email),
-            border: OutlineInputBorder(
+            border: Theme.of(context).inputDecorationTheme.border,
+            focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
+            enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
+            errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade400,
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
             floatingLabelBehavior: FloatingLabelBehavior.never,
+            errorText: _emailController.text.isNotEmpty &&
+                    !_isValidEmail(_emailController.text)
+                ? 'Please enter a valid email address'
+                : null,
+            errorStyle: const TextStyle(
+              fontSize: 11,
+              color: Colors.red,
+            ),
           ),
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
           onChanged: (final value) => setState(() {}),
+          onFieldSubmitted: (final value) {
+            _linkedinFocus.requestFocus();
+          },
+          validator: (final value) {
+            if (value == null || value.isEmpty) {
+              return 'Email is required';
+            }
+            if (!_isValidEmail(value)) {
+              return 'Please enter a valid email address';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 16),
 
@@ -940,40 +1132,44 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _linkedinController,
+          focusNode: _linkedinFocus,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
             labelText: 'Enter your LinkedIn profile URL',
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-            prefixIconColor: Colors.grey.shade600,
+            labelStyle: Theme.of(context).inputDecorationTheme.labelStyle ??
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            prefixIconColor:
+                Theme.of(context).inputDecorationTheme.prefixIconColor ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
             prefixStyle: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             prefixIcon: const Icon(Icons.link),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade400,
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
+            border: Theme.of(context).inputDecorationTheme.border,
+            focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
+            enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
             floatingLabelBehavior: FloatingLabelBehavior.never,
           ),
           keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (final value) {
+            // For the last field, we can either move to next step if valid
+            // or just unfocus the keyboard
+            if (_isStep1Valid()) {
+              _linkedinFocus.unfocus();
+              // Optionally auto-advance to next step
+              // _nextStep();
+            } else {
+              _linkedinFocus.unfocus();
+            }
+          },
         ),
       ],
     );
@@ -1006,33 +1202,24 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           controller: _coverLetterController,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).inputDecorationTheme.fillColor,
             hintText: 'Write your cover letter here...',
-            hintStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey.shade600,
-            ),
+            hintStyle: Theme.of(context).inputDecorationTheme.hintStyle ??
+                TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
             prefixIcon: const Padding(
               padding: EdgeInsets.only(bottom: 100),
               child: Icon(Icons.description),
             ),
-            prefixIconColor: Colors.grey.shade600,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: Colors.grey.shade400,
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
+            prefixIconColor:
+                Theme.of(context).inputDecorationTheme.prefixIconColor ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
+            border: Theme.of(context).inputDecorationTheme.border,
+            focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
+            enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
             floatingLabelBehavior: FloatingLabelBehavior.never,
           ),
           maxLines: 6,
@@ -1183,9 +1370,11 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1195,7 +1384,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -1217,9 +1406,9 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             // width: 100,
             child: Text(
               '$label : ',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.normal,
-                color: Color.fromARGB(255, 48, 48, 48),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -1227,8 +1416,8 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
