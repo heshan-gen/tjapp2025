@@ -16,46 +16,65 @@ class WorkManagerBackgroundService {
   static const String _knownJobIdsKey = 'known_job_ids';
 
   static Future<void> initialize() async {
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: false,
-    );
+    print('🚀 WorkManagerBackgroundService.initialize() called');
+    try {
+      await Workmanager().initialize(
+        callbackDispatcher,
+        isInDebugMode: true, // Enable debug mode to see logs
+      );
+      print('✅ WorkManager initialized successfully');
+    } catch (e) {
+      print('❌ WorkManager initialization failed: $e');
+      rethrow;
+    }
   }
 
   static Future<void> startBackgroundTask() async {
-    // Cancel any existing task first
-    await Workmanager().cancelByUniqueName(_taskName);
+    print('🔄 Starting background task registration...');
+    try {
+      // Cancel any existing task first
+      await Workmanager().cancelByUniqueName(_taskName);
+      await Workmanager().cancelByUniqueName('${_taskName}_immediate');
+      print('✅ Cancelled existing tasks');
 
-    // Register a one-time task for immediate execution
-    await Workmanager().registerOneOffTask(
-      '${_taskName}_immediate',
-      '${_taskName}_immediate',
-      initialDelay: const Duration(seconds: 5), // Start after 5 seconds
-      constraints: Constraints(
-        networkType: NetworkType.connected,
-        requiresBatteryNotLow: false,
-        requiresCharging: false,
-        requiresDeviceIdle: false,
-        requiresStorageNotLow: false,
-      ),
-    );
+      // Register a one-time task for immediate execution
+      await Workmanager().registerOneOffTask(
+        '${_taskName}_immediate',
+        '${_taskName}_immediate',
+        initialDelay: const Duration(seconds: 5), // Start after 5 seconds
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: false,
+          requiresCharging: false,
+          requiresDeviceIdle: false,
+          requiresStorageNotLow: false,
+        ),
+      );
+      print('✅ Registered immediate one-off task (5 seconds delay)');
 
-    // Register periodic task for ongoing checks
-    await Workmanager().registerPeriodicTask(
-      _taskName,
-      _taskName,
-      frequency: const Duration(minutes: 5), // Check every 5 minutes
-      constraints: Constraints(
-        networkType: NetworkType.connected,
-        requiresBatteryNotLow: false,
-        requiresCharging: false,
-        requiresDeviceIdle: false,
-        requiresStorageNotLow: false,
-      ),
-      initialDelay: const Duration(minutes: 1), // Start periodic after 1 minute
-    );
-    print(
-        'Background task registered with WorkManager - immediate check in 5 seconds, then every 5 minutes');
+      // Register periodic task for ongoing checks
+      await Workmanager().registerPeriodicTask(
+        _taskName,
+        _taskName,
+        frequency:
+            const Duration(minutes: 15), // Use Android minimum: 15 minutes
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: false,
+          requiresCharging: false,
+          requiresDeviceIdle: false,
+          requiresStorageNotLow: false,
+        ),
+        initialDelay:
+            const Duration(minutes: 1), // Start periodic after 1 minute
+      );
+      print(
+          '✅ Registered periodic task (every 15 minutes, starts in 1 minute)');
+      print('📝 Background task registration completed successfully');
+    } catch (e) {
+      print('❌ Failed to register background tasks: $e');
+      rethrow;
+    }
   }
 
   static Future<void> stopBackgroundTask() async {
@@ -65,27 +84,39 @@ class WorkManagerBackgroundService {
   }
 
   static Future<void> checkForNewJobs() async {
+    print('🔍 ===== CHECKING FOR NEW JOBS ===== 🔍');
     try {
       final prefs = await SharedPreferences.getInstance();
       final subscribedCategories =
           prefs.getStringList(_subscribedCategoriesKey) ?? [];
 
+      print('📱 Subscribed categories: ${subscribedCategories.length}');
+      print('📝 Categories: $subscribedCategories');
+
       if (subscribedCategories.isEmpty) {
-        print('No categories subscribed, skipping check');
+        print('⚠️ No categories subscribed, skipping check');
         return;
       }
 
       final lastCheck = await _getLastCheckTime();
       final now = DateTime.now();
 
+      if (lastCheck != null) {
+        final timeSinceLastCheck = now.difference(lastCheck);
+        print(
+            '⏱️ Time since last check: ${timeSinceLastCheck.inSeconds} seconds');
+      } else {
+        print('ℹ️ This is the first check');
+      }
+
       // Only check if it's been at least 1 minute since last check
       if (lastCheck != null && now.difference(lastCheck).inMinutes < 1) {
-        print('Too soon since last check, skipping');
+        print('⏸️ Too soon since last check, skipping');
         return;
       }
 
       print(
-          'Checking for new jobs in ${subscribedCategories.length} categories...');
+          '🌐 Fetching jobs from ${subscribedCategories.length} categories...');
 
       // Fetch current jobs from RSS feeds
       final currentJobs = await BackgroundJobService.fetchJobsFromCategories(
@@ -94,42 +125,69 @@ class WorkManagerBackgroundService {
           currentJobs.map((final job) => job.comments).toList();
       final knownJobIds = await _getKnownJobIds();
 
+      print('📊 Current jobs: ${currentJobIds.length}');
+      print('📚 Known jobs: ${knownJobIds.length}');
+
       // Find new job IDs
       final newJobIds = currentJobIds
           .where((final jobId) => !knownJobIds.contains(jobId))
           .toList();
 
       if (newJobIds.isNotEmpty) {
-        print('Found ${newJobIds.length} new jobs by jobId comparison');
+        print('🎉 Found ${newJobIds.length} new jobs - sending notifications');
+        print('📂 Subscribed categories: $subscribedCategories');
 
         // Get the actual job objects for new jobs
         final newJobs = currentJobs
             .where((final job) => newJobIds.contains(job.comments))
             .toList();
 
+        // Track jobs per category
+        final Map<String, int> jobsPerCategory = {};
+
         // Show notifications for new jobs
         for (final job in newJobs) {
+          final categoryName =
+              _getCategoryNameForJob(job, subscribedCategories);
+
+          // Count jobs per category
+          jobsPerCategory[categoryName] =
+              (jobsPerCategory[categoryName] ?? 0) + 1;
+
+          print('📬 Sending notification for: ${job.title}');
+          print('   Category: $categoryName');
+
           await _showLocalNotification(
             'New Job Available',
             job.title,
             {
               'jobId': job.comments,
-              'category': _getCategoryNameForJob(job, subscribedCategories),
+              'category': categoryName,
               'url': job.id,
             },
           );
         }
 
+        // Print summary of jobs per category
+        print('📊 ===== JOB CATEGORY SUMMARY ===== 📊');
+        jobsPerCategory.forEach((category, count) {
+          print('   $category: $count job(s)');
+        });
+        print('📊 ================================= 📊');
+
         // Update known job IDs
         await _updateKnownJobIds(currentJobIds);
+        print('✅ Updated known job IDs');
       } else {
-        print('No new jobs found');
+        print('ℹ️ No new jobs found');
       }
 
       await _setLastCheckTime(now);
-      print('Background check completed');
-    } catch (e) {
-      print('Background service error: $e');
+      print('✅ Background check completed at ${now.toString()}');
+      print('🏁 ===== CHECK FINISHED ===== 🏁');
+    } catch (e, stackTrace) {
+      print('❌ Background service error: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 
@@ -174,13 +232,20 @@ class WorkManagerBackgroundService {
 
   static Future<void> _showLocalNotification(final String title,
       final String body, final Map<String, dynamic> data) async {
+    print('📲 ===== SHOWING NOTIFICATION ===== 📲');
+    print('📋 Title: $title');
+    print('📄 Body: $body');
+    print('📦 Data: $data');
+
     try {
       final FlutterLocalNotificationsPlugin localNotifications =
           FlutterLocalNotificationsPlugin();
+      print('✅ Created FlutterLocalNotificationsPlugin instance');
 
       // Initialize local notifications with proper settings
+      // Using ic_launcher_foreground from drawable folders
       const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('ic_launcher_foreground');
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -193,7 +258,9 @@ class WorkManagerBackgroundService {
         iOS: iosSettings,
       );
 
-      await localNotifications.initialize(settings);
+      print('🔧 Initializing notification plugin...');
+      final initialized = await localNotifications.initialize(settings);
+      print('✅ Plugin initialized: $initialized');
 
       // Create notification channel for Android with high importance
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -211,7 +278,11 @@ class WorkManagerBackgroundService {
               AndroidFlutterLocalNotificationsPlugin>();
 
       if (androidImplementation != null) {
+        print('🔧 Creating notification channel...');
         await androidImplementation.createNotificationChannel(channel);
+        print('✅ Notification channel created: job_alerts');
+      } else {
+        print('⚠️ Android implementation is null!');
       }
 
       const AndroidNotificationDetails androidDetails =
@@ -221,14 +292,13 @@ class WorkManagerBackgroundService {
         channelDescription: 'Notifications for new job opportunities',
         importance: Importance.max,
         priority: Priority.max,
-        icon: '@mipmap/ic_launcher',
+        // No custom icon - Android will use default notification icon
         enableVibration: true,
         playSound: true,
         showWhen: true,
         autoCancel: true,
         ongoing: false,
         visibility: NotificationVisibility.public,
-        fullScreenIntent: true,
         category: AndroidNotificationCategory.message,
       );
 
@@ -245,17 +315,26 @@ class WorkManagerBackgroundService {
         iOS: iosDetails,
       );
 
+      final notificationId =
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      print('🔔 Showing notification with ID: $notificationId');
+
       await localNotifications.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        notificationId,
         title,
         body,
         details,
         payload: jsonEncode(data),
       );
 
-      print('Notification sent: $title');
-    } catch (e) {
-      print('Error sending notification: $e');
+      print('✅ ✅ ✅ Notification.show() completed successfully! ✅ ✅ ✅');
+      print('📲 Notification should now be visible on device!');
+      print('📲 ===== NOTIFICATION PROCESS COMPLETE ===== 📲');
+    } catch (e, stackTrace) {
+      print('❌ ❌ ❌ ERROR SHOWING NOTIFICATION ❌ ❌ ❌');
+      print('❌ Error: $e');
+      print('❌ Stack trace: $stackTrace');
+      print('📲 ===== NOTIFICATION FAILED ===== 📲');
     }
   }
 }
@@ -263,13 +342,26 @@ class WorkManagerBackgroundService {
 // This function must be a top-level function for WorkManager
 @pragma('vm:entry-point')
 void callbackDispatcher() {
+  print('🎯 ===== CALLBACK DISPATCHER CALLED ===== 🎯');
   Workmanager().executeTask((final task, final inputData) async {
-    print('WorkManager task executed: $task');
+    print('⏰ WorkManager task started at: ${DateTime.now()}');
+    print('📋 Task name: $task');
+    print('📦 Input data: $inputData');
 
-    if (task == 'jobCheckTask' || task == 'jobCheckTask_immediate') {
-      await WorkManagerBackgroundService.checkForNewJobs();
+    try {
+      if (task == 'jobCheckTask' || task == 'jobCheckTask_immediate') {
+        print('✅ Task matches our job check tasks, executing...');
+        await WorkManagerBackgroundService.checkForNewJobs();
+        print('✅ Job check completed successfully');
+        return Future.value(true);
+      } else {
+        print('⚠️ Unknown task: $task');
+        return Future.value(false);
+      }
+    } catch (e, stackTrace) {
+      print('❌ Task execution failed: $e');
+      print('Stack trace: $stackTrace');
+      return Future.value(false);
     }
-
-    return Future.value(true);
   });
 }

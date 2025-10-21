@@ -190,7 +190,7 @@ class SimpleBackgroundService {
 
       // Initialize local notifications
       const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('ic_launcher_foreground');
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -228,7 +228,7 @@ class SimpleBackgroundService {
         channelDescription: 'Notifications for new job opportunities',
         importance: Importance.high,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        // No custom icon - Android will use default notification icon
       );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(

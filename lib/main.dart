@@ -22,25 +22,41 @@ import 'theme/app_theme.dart';
 import 'widgets/bottom_navigation_widget.dart';
 
 void main() async {
+  print('🚀 ===== APP STARTING ===== 🚀');
   WidgetsFlutterBinding.ensureInitialized();
+
+  print('📱 Initializing Firebase...');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  print('✅ Firebase initialized');
 
   // Register background message handler BEFORE initializing notification service
   // This is critical for handling notifications when app is closed
+  print('📬 Registering Firebase background message handler...');
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  print('✅ Background message handler registered');
 
   // Initialize notification service for background notifications
+  print('🔔 Initializing notification service...');
   await NotificationService().initialize();
+  print('✅ Notification service initialized');
 
   // Initialize WorkManager for background job checking
+  print('⚙️ Initializing WorkManager...');
   await WorkManagerBackgroundService.initialize();
+  print('✅ WorkManager initialized');
+
+  print('🎯 Starting background task...');
   await WorkManagerBackgroundService.startBackgroundTask();
+  print('✅ Background task started');
 
   // Request battery optimization permissions
+  print('🔋 Requesting battery optimization permissions...');
   await BatteryOptimizationService.requestAllPermissions();
+  print('✅ Battery permissions requested');
 
+  print('🏁 ===== APP INITIALIZATION COMPLETE ===== 🏁');
   runApp(const TopJobsApp());
 }
 

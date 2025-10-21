@@ -40,7 +40,7 @@ Future<void> _showBackgroundNotification(
 
   // Initialize local notifications for background
   const AndroidInitializationSettings androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('ic_launcher_foreground');
   const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
     requestAlertPermission: true,
     requestBadgePermission: true,
@@ -81,7 +81,7 @@ Future<void> _showBackgroundNotification(
     channelDescription: 'Notifications for new job opportunities',
     importance: Importance.high,
     priority: Priority.high,
-    icon: '@mipmap/ic_launcher',
+    // No custom icon - Android will use default notification icon
     enableVibration: true,
     playSound: true,
   );
@@ -136,7 +136,7 @@ class NotificationService {
   Future<void> _initializeLocalNotifications() async {
     try {
       const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('ic_launcher_foreground');
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -245,7 +245,7 @@ class NotificationService {
         channelDescription: 'Notifications for new job opportunities',
         importance: Importance.high,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        // No custom icon - Android will use default notification icon
       );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(

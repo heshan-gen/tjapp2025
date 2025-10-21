@@ -1482,12 +1482,31 @@ class JobProvider with ChangeNotifier {
           .toList();
 
       if (newJobIds.isNotEmpty) {
-        print('Found ${newJobIds.length} new jobs - sending notifications');
-
         // Get the actual job objects for new jobs
         final newJobs = currentJobs
             .where((final job) => newJobIds.contains(job.comments))
             .toList();
+
+        // Get subscribed categories
+        final prefs = await SharedPreferences.getInstance();
+        final subscribedCategories =
+            prefs.getStringList('subscribed_categories') ?? [];
+
+        // Count jobs per category (show ALL categories)
+        final Map<String, int> jobsPerCategory = {};
+        for (final job in newJobs) {
+          final categoryName =
+              _getCategoryNameForJob(job, subscribedCategories);
+          jobsPerCategory[categoryName] =
+              (jobsPerCategory[categoryName] ?? 0) + 1;
+        }
+
+        // Print with category breakdown
+        final categoryBreakdown = jobsPerCategory.entries
+            .map((e) => '${e.key}: ${e.value}')
+            .join(', ');
+        print(
+            '✅ Found ${newJobIds.length} new jobs - sending notifications [$categoryBreakdown]');
 
         // Send notifications for new jobs
         await _sendNotificationsForNewJobs(newJobs);
@@ -1599,7 +1618,7 @@ class JobProvider with ChangeNotifier {
 
       // Initialize local notifications with proper settings
       const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('ic_launcher_foreground');
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -1640,14 +1659,13 @@ class JobProvider with ChangeNotifier {
         channelDescription: 'Notifications for new job opportunities',
         importance: Importance.max,
         priority: Priority.max,
-        icon: '@mipmap/ic_launcher',
+        // No custom icon - Android will use default notification icon
         enableVibration: true,
         playSound: true,
         showWhen: true,
         autoCancel: true,
         ongoing: false,
         visibility: NotificationVisibility.public,
-        fullScreenIntent: true,
         category: AndroidNotificationCategory.message,
       );
 
