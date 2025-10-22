@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import '../widgets/modern_loading_modal.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/language_provider.dart';
 import '../data/rss_categories.dart';
 import '../services/color_service.dart';
 import '../widgets/job_card_widget.dart';
+import '../widgets/language_selector_widget.dart';
 // import '../widgets/job_rating_widget.dart';
 
 class CategoryJobScreen extends StatefulWidget {
@@ -89,6 +91,7 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const LanguageSelectorWidget(iconColor: Colors.white),
           Consumer<ThemeProvider>(
             builder: (final context, final themeProvider, final child) {
               return IconButton(
@@ -307,9 +310,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                   hintText:
                       'Search jobs in ${widget.category.englisht} by title, company, location, or skills...',
                   hintStyle:
-                      TextStyle(fontSize: 12, color: widget.categoryColor),
+                      TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
                   prefixIcon:
-                      Icon(Icons.search, size: 20, color: widget.categoryColor),
+                      Icon(Icons.search, size: 20, color: Theme.of(context).textTheme.bodySmall?.color),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 20),
@@ -648,12 +651,16 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
 
   @override
   Widget build(final BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     final filteredCategories = RssCategories.categories.where((final category) {
       if (_searchQuery.isEmpty) return true;
+      final localizedTitle =
+          category.getLocalizedTitle(languageProvider.currentLanguage);
       return category.minititle
               .toLowerCase()
               .contains(_searchQuery.toLowerCase()) ||
-          category.englisht.toLowerCase().contains(_searchQuery.toLowerCase());
+          localizedTitle.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Container(
@@ -715,28 +722,35 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                                   Theme.of(context).textTheme.titleLarge?.color,
                             ),
                           ),
-                          RichText(
-                            text: TextSpan(
-                              text: 'Currently viewing: ',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.color,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: widget.currentCategory.minititle,
+                          Consumer<LanguageProvider>(
+                            builder: (final context, final languageProvider,
+                                final child) {
+                              return RichText(
+                                text: TextSpan(
+                                  text: 'Currently viewing: ',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _colorService.getCategoryColor(
-                                        widget.currentCategory.icon),
-                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
                                   ),
+                                  children: [
+                                    TextSpan(
+                                      text: widget.currentCategory
+                                          .getLocalizedTitle(
+                                              languageProvider.currentLanguage),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _colorService.getCategoryColor(
+                                            widget.currentCategory.icon),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -791,7 +805,23 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                               },
                             )
                           : null,
-                      border: InputBorder.none,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.outline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.outline),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.outline),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.onBackground,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -812,13 +842,14 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
 
           // Categories grid
           Expanded(
-            child: Consumer<JobProvider>(
-              builder: (final context, final jobProvider, final child) {
+            child: Consumer2<JobProvider, LanguageProvider>(
+              builder: (final context, final jobProvider,
+                  final languageProvider, final child) {
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 1.1,
+                    childAspectRatio: 0.95,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -891,9 +922,10 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 10),
                               Text(
-                                category.englisht,
+                                category.getLocalizedTitle(
+                                    languageProvider.currentLanguage),
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .textTheme
@@ -902,10 +934,10 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                                   fontSize: 10,
                                 ),
                                 textAlign: TextAlign.center,
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 10),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,

@@ -11,14 +11,14 @@ class BannerSlider extends StatefulWidget {
   final List<banner_model.Banner> banners;
   final double height;
   final double borderRadius;
-  final int? jobCount;
+  // final int? jobCount;
 
   const BannerSlider({
     super.key,
     required this.banners,
     this.height = 170.0,
     this.borderRadius = 10.0,
-    this.jobCount,
+    // this.jobCount,
   });
 
   @override
@@ -267,13 +267,13 @@ class _BannerSliderState extends State<BannerSlider> {
             ),
           ),
           // Text content (in front of image)
-          Padding(
-            padding: const EdgeInsets.all(20),
+          const Padding(
+            padding: EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   'Welcome to topjobs!',
                   style: TextStyle(
                     color: Colors.white,
@@ -281,33 +281,33 @@ class _BannerSliderState extends State<BannerSlider> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Set Wena Job Eka',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                   ),
                 ),
-                if (widget.jobCount != null && widget.jobCount! > 0) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0BE28).withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${widget.jobCount} jobs available',
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                // if (widget.jobCount != null && widget.jobCount! > 0) ...[
+                //   const SizedBox(height: 12),
+                //   Container(
+                //     padding:
+                //         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                //     decoration: BoxDecoration(
+                //       color: const Color(0xFFF0BE28).withOpacity(0.9),
+                //       borderRadius: BorderRadius.circular(16),
+                //     ),
+                //     child: Text(
+                //       '${widget.jobCount} jobs available',
+                //       style: const TextStyle(
+                //         color: Color.fromARGB(255, 0, 0, 0),
+                //         fontSize: 14,
+                //         fontWeight: FontWeight.w600,
+                //       ),
+                //     ),
+                //   ),
+                // ],
               ],
             ),
           ),

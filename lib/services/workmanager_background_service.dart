@@ -170,7 +170,7 @@ class WorkManagerBackgroundService {
 
         // Print summary of jobs per category
         print('📊 ===== JOB CATEGORY SUMMARY ===== 📊');
-        jobsPerCategory.forEach((category, count) {
+        jobsPerCategory.forEach((final category, final count) {
           print('   $category: $count job(s)');
         });
         print('📊 ================================= 📊');

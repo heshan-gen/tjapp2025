@@ -163,37 +163,37 @@ class JobProvider with ChangeNotifier {
 
   // RSS Feed URLs from topjobs.lk - using same URLs as RssCategories
   static const List<String> _rssFeeds = [
-    'http://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
-    'http://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
-    'http://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
-    'http://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
-    'http://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
-    'http://www.topjobs.lk/feeds/legasy/hr_training.rss',
-    'http://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
-    'http://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
-    'http://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
-    'http://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
-    'http://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
-    'http://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
-    'http://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
-    'http://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
-    'http://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
-    'http://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
-    'http://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
-    'http://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
-    'http://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
-    'http://www.topjobs.lk/feeds/legasy/legal_law.rss',
-    'http://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
-    'http://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
-    'http://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
-    'http://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
-    'http://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
-    'http://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
-    'http://www.topjobs.lk/feeds/legasy/security.rss',
-    'http://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
-    'http://www.topjobs.lk/feeds/legasy/international_development.rss',
-    'http://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
-    'http://www.topjobs.lk/feeds/legasy/imports_exports.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
+    'https://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
+    'https://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
+    'https://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
+    'https://www.topjobs.lk/feeds/legasy/hr_training.rss',
+    'https://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
+    'https://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
+    'https://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
+    'https://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
+    'https://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
+    'https://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
+    'https://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
+    'https://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
+    'https://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
+    'https://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
+    'https://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
+    'https://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
+    'https://www.topjobs.lk/feeds/legasy/legal_law.rss',
+    'https://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
+    'https://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
+    'https://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
+    'https://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
+    'https://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
+    'https://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
+    'https://www.topjobs.lk/feeds/legasy/security.rss',
+    'https://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
+    'https://www.topjobs.lk/feeds/legasy/international_development.rss',
+    'https://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
+    'https://www.topjobs.lk/feeds/legasy/imports_exports.rss',
   ];
 
   List<Job> get jobs => _filteredJobs;
@@ -279,15 +279,71 @@ class JobProvider with ChangeNotifier {
     }
   }
 
-  // Fetch jobs from a single RSS feed
+  // Fetch jobs from a single RSS feed with retry logic
   Future<List<Job>> _fetchJobsFromRSS(final String feedUrl) async {
-    try {
-      final response = await http.get(Uri.parse(feedUrl));
-      if (response.statusCode == 200) {
-        return _parseRSSFeed(response.body, feedUrl);
+    const int maxRetries = 3;
+    const Duration initialTimeout = Duration(seconds: 60);
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Exponential backoff for timeout
+        final timeout = initialTimeout * (attempt + 1);
+
+        final response = await http.get(
+          Uri.parse(feedUrl),
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+          },
+        ).timeout(timeout);
+
+        if (response.statusCode == 200) {
+          final jobs = _parseRSSFeed(response.body, feedUrl);
+          if (jobs.isNotEmpty) {
+            print('✅ Successfully fetched ${jobs.length} jobs from $feedUrl');
+          } else {
+            print('⚠️ No jobs found in feed: $feedUrl');
+          }
+          return jobs;
+        } else if (response.statusCode == 301 || response.statusCode == 302) {
+          // Handle redirects
+          print('⚠️ Redirect (${response.statusCode}) for feed: $feedUrl');
+          if (response.headers['location'] != null) {
+            final redirectUrl = response.headers['location']!;
+            print('Following redirect to: $redirectUrl');
+            // Try the redirect URL
+            continue;
+          }
+        } else {
+          print(
+              '❌ Failed to fetch RSS feed $feedUrl: HTTP ${response.statusCode}');
+        }
+      } on TimeoutException catch (e) {
+        if (attempt < maxRetries - 1) {
+          final waitTime = Duration(seconds: (attempt + 1) * 2);
+          print(
+              '⏱️ Timeout fetching $feedUrl (attempt ${attempt + 1}/$maxRetries). Retrying in ${waitTime.inSeconds}s...');
+          await Future.delayed(waitTime);
+          continue;
+        } else {
+          print(
+              '❌ Timeout fetching RSS feed $feedUrl after $maxRetries attempts: $e');
+        }
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          final waitTime = Duration(seconds: (attempt + 1) * 2);
+          print(
+              '⚠️ Error fetching $feedUrl (attempt ${attempt + 1}/$maxRetries): $e. Retrying in ${waitTime.inSeconds}s...');
+          await Future.delayed(waitTime);
+          continue;
+        } else {
+          print(
+              '❌ Error fetching RSS feed $feedUrl after $maxRetries attempts: $e');
+        }
       }
-    } catch (e) {
-      print('Error fetching RSS feed $feedUrl: $e');
     }
     return [];
   }
@@ -1503,7 +1559,7 @@ class JobProvider with ChangeNotifier {
 
         // Print with category breakdown
         final categoryBreakdown = jobsPerCategory.entries
-            .map((e) => '${e.key}: ${e.value}')
+            .map((final e) => '${e.key}: ${e.value}')
             .join(', ');
         print(
             '✅ Found ${newJobIds.length} new jobs - sending notifications [$categoryBreakdown]');

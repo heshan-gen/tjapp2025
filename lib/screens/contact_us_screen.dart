@@ -14,6 +14,8 @@ import '../theme/app_theme.dart';
 import '../services/contact_numbers_service.dart';
 import '../models/contact_numbers.dart';
 import '../services/recaptcha_service.dart';
+import '../services/bad_word_filter_service.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
@@ -26,11 +28,17 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
   ContactNumbers? _contactNumbers;
   bool _isLoadingContactNumbers = false;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.onUserInteraction;
+
+  // Phone validation state
+  String _completePhoneNumber = '';
+  bool _isPhoneValid = false;
 
   // Company location coordinates (Colombo 03, Sri Lanka)
   static const LatLng _companyLocation =
@@ -79,6 +87,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _subjectController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -137,6 +146,38 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         );
       }
     }
+  }
+
+  void _clearForm() {
+    // Clear all text fields
+    _nameController.clear();
+    _emailController.clear();
+    _phoneController.clear();
+    _subjectController.clear();
+    _messageController.clear();
+
+    // Reset form validation state
+    _formKey.currentState?.reset();
+
+    // Reset phone validation state
+    setState(() {
+      _completePhoneNumber = '';
+      _isPhoneValid = false;
+      _autovalidateMode = AutovalidateMode.disabled;
+    });
+
+    // Show confirmation message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Form cleared'),
+        backgroundColor: Colors.grey[700],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _submitForm() async {
@@ -202,7 +243,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           subject: _subjectController.text.trim(),
-          message: _messageController.text.trim(),
+          message:
+              'Phone: $_completePhoneNumber\n\n${_messageController.text.trim()}',
         );
 
         setState(() {
@@ -228,8 +270,12 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             // Clear form
             _nameController.clear();
             _emailController.clear();
+            _phoneController.clear();
             _subjectController.clear();
             _messageController.clear();
+
+            // Reset form validation state
+            _formKey.currentState?.reset();
           } else {
             // Show error message
             ScaffoldMessenger.of(context).showSnackBar(
@@ -683,6 +729,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
+          autovalidateMode: _autovalidateMode,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -752,6 +799,18 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Required';
                         }
+                        if (BadWordFilterService.containsBadWords(value)) {
+                          return 'Inappropriate language';
+                        }
+                        if (value.trim().length < 2) {
+                          return 'Min 2 chars';
+                        }
+                        if (value.trim().length > 50) {
+                          return 'Max 50 chars';
+                        }
+                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                          return 'Only letters';
+                        }
                         return null;
                       },
                     ),
@@ -767,6 +826,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Required';
                         }
+                        if (BadWordFilterService.containsBadWords(value)) {
+                          return 'Inappropriate language';
+                        }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
                           return 'Invalid email';
@@ -779,6 +841,110 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Phone number field with country code selector
+              IntlPhoneField(
+                controller: _phoneController,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.phone_outlined,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                    size: 20,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[700]!
+                          : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[700]!
+                          : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                      width: 2,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(
+                      color: Colors.red,
+                      width: 1,
+                    ),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(
+                      color: Colors.red,
+                      width: 2,
+                    ),
+                  ),
+                  counterText: '',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                ),
+                initialCountryCode: 'LK',
+                dropdownTextStyle: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.grey[800],
+                ),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.grey[800],
+                ),
+                invalidNumberMessage: 'Invalid phone number',
+                onChanged: (final phone) {
+                  setState(() {
+                    _completePhoneNumber = phone.completeNumber;
+                    _isPhoneValid = phone.isValidNumber();
+                  });
+                },
+                onCountryChanged: (final country) {
+                  setState(() {
+                    _isPhoneValid = false;
+                  });
+                },
+                validator: (final phone) {
+                  if (phone == null || phone.number.isEmpty) {
+                    return 'Phone number required';
+                  }
+                  if (!_isPhoneValid) {
+                    return 'Invalid phone number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
               _buildModernTextField(
                 controller: _subjectController,
                 label: 'Subject',
@@ -786,6 +952,15 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 validator: (final value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a subject';
+                  }
+                  if (BadWordFilterService.containsBadWords(value)) {
+                    return 'Please avoid using inappropriate language';
+                  }
+                  if (value.trim().length < 3) {
+                    return 'Subject must be at least 3 characters';
+                  }
+                  if (value.trim().length > 100) {
+                    return 'Subject must be less than 100 characters';
                   }
                   return null;
                 },
@@ -801,75 +976,133 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your message';
                   }
-                  if (value.length < 10) {
+                  if (BadWordFilterService.containsBadWords(value)) {
+                    return 'Please avoid using inappropriate language';
+                  }
+                  if (value.trim().length < 10) {
                     return 'Message must be at least 10 characters';
+                  }
+                  if (value.trim().length > 1000) {
+                    return 'Message must be less than 1000 characters';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 24),
 
-              // Modern submit button
-              Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor.withOpacity(0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _isSubmitting ? null : _submitForm,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Center(
-                      child: _isSubmitting
-                          ? SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: LoadingAnimationWidget.beat(
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            )
-                          : Row(
+              // Form action buttons
+              Row(
+                children: [
+                  // Clear button
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.grey[600]!
+                              : Colors.grey[400]!,
+                          width: 1,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isSubmitting ? null : _clearForm,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Center(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.send_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
                                 Text(
-                                  'Send Message',
+                                  'Clear',
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(
-                                        color: Colors.white,
+                                        color: isDarkMode
+                                            ? Colors.grey[300]
+                                            : Colors.grey[700],
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
                               ],
                             ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  // Send Message button
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).primaryColor,
+                            Theme.of(context).primaryColor.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isSubmitting ? null : _submitForm,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Center(
+                            child: _isSubmitting
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: LoadingAnimationWidget.beat(
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.send_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Send Message',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 

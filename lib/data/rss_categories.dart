@@ -1,3 +1,5 @@
+import '../providers/language_provider.dart';
+
 class RssCategory {
   final String catid;
   final String minititle;
@@ -16,41 +18,52 @@ class RssCategory {
     required this.icon,
     required this.feedUrl,
   });
+
+  String getLocalizedTitle(final AppLanguage language) {
+    switch (language) {
+      case AppLanguage.english:
+        return englisht;
+      case AppLanguage.sinhala:
+        return sinhalat;
+      case AppLanguage.tamil:
+        return tamilt;
+    }
+  }
 }
 
 class RssCategories {
   static const List<String> rssUrls = [
-    'http://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
-    'http://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
-    'http://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
-    'http://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
-    'http://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
-    'http://www.topjobs.lk/feeds/legasy/hr_training.rss',
-    'http://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
-    'http://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
-    'http://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
-    'http://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
-    'http://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
-    'http://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
-    'http://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
-    'http://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
-    'http://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
-    'http://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
-    'http://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
-    'http://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
-    'http://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
-    'http://www.topjobs.lk/feeds/legasy/legal_law.rss',
-    'http://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
-    'http://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
-    'http://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
-    'http://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
-    'http://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
-    'http://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
-    'http://www.topjobs.lk/feeds/legasy/security.rss',
-    'http://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
-    'http://www.topjobs.lk/feeds/legasy/international_development.rss',
-    'http://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
-    'http://www.topjobs.lk/feeds/legasy/imports_exports.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
+    'https://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
+    'https://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
+    'https://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
+    'https://www.topjobs.lk/feeds/legasy/hr_training.rss',
+    'https://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
+    'https://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
+    'https://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
+    'https://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
+    'https://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
+    'https://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
+    'https://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
+    'https://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
+    'https://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
+    'https://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
+    'https://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
+    'https://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
+    'https://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
+    'https://www.topjobs.lk/feeds/legasy/legal_law.rss',
+    'https://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
+    'https://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
+    'https://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
+    'https://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
+    'https://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
+    'https://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
+    'https://www.topjobs.lk/feeds/legasy/security.rss',
+    'https://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
+    'https://www.topjobs.lk/feeds/legasy/international_development.rss',
+    'https://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
+    'https://www.topjobs.lk/feeds/legasy/imports_exports.rss',
   ];
 
   static const List<RssCategory> categories = [
@@ -62,7 +75,7 @@ class RssCategories {
       tamilt: 'IT (மென்பொருள்)',
       icon: 'design-services',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
+          'https://www.topjobs.lk/feeds/legasy/it_sware_db_qa_web_graphics_gis.rss',
     ),
     RssCategory(
       catid: 'HNS',
@@ -72,7 +85,7 @@ class RssCategories {
       tamilt: 'IT (வன்பொருள்)',
       icon: 'lan',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
+          'https://www.topjobs.lk/feeds/legasy/it_hware_networks_systems.rss',
     ),
     RssCategory(
       catid: 'ACA',
@@ -82,7 +95,7 @@ class RssCategories {
       tamilt: 'கணக்கியல்',
       icon: 'attach-money',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
+          'https://www.topjobs.lk/feeds/legasy/accounting_auditing_finance.rss',
     ),
     RssCategory(
       catid: 'BAF',
@@ -91,7 +104,7 @@ class RssCategories {
       sinhalat: 'බැංකු/රක්ෂණ',
       tamilt: 'வங்கி/காப்பீடு',
       icon: 'home-work',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/banking_insurance.rss',
     ),
     RssCategory(
       catid: 'SMM',
@@ -101,7 +114,7 @@ class RssCategories {
       tamilt: 'விற்பனை/சந்தைப்படுத்தல்',
       icon: 'people-alt',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
+          'https://www.topjobs.lk/feeds/legasy/sales_marketing_merchandising.rss',
     ),
     RssCategory(
       catid: 'HAT',
@@ -110,7 +123,7 @@ class RssCategories {
       sinhalat: 'මානව සම්පත්/පුහුණුව',
       tamilt: 'மனித வளம்',
       icon: 'diversity-3',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/hr_training.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/hr_training.rss',
     ),
     RssCategory(
       catid: 'COM',
@@ -120,7 +133,7 @@ class RssCategories {
       tamilt: 'நிறுவன முகாமைத்துவம் / ஆய்வாளர்',
       icon: 'settings-accessibility',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
+          'https://www.topjobs.lk/feeds/legasy/corporate_management_analysts.rss',
     ),
     RssCategory(
       catid: 'OAS',
@@ -130,7 +143,7 @@ class RssCategories {
       tamilt: 'நிர்வாகி / செயலாளர் / வரவேற்பாளர்',
       icon: 'shield',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
+          'https://www.topjobs.lk/feeds/legasy/office_admin_secretary_receptionist.rss',
     ),
     RssCategory(
       catid: 'CCE',
@@ -140,7 +153,7 @@ class RssCategories {
       tamilt: 'கட்டிட பொறியியல்',
       icon: 'roofing',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
+          'https://www.topjobs.lk/feeds/legasy/civil_eng_interior_design_architecture.rss',
     ),
     RssCategory(
       catid: 'ITT',
@@ -149,7 +162,7 @@ class RssCategories {
       sinhalat: 'තොරතුරු තාක්ෂණ - ටෙලිකොම්',
       tamilt: 'டெலிகாம்',
       icon: 'router',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/it_telecoms.rss',
     ),
     RssCategory(
       catid: 'CUR',
@@ -159,7 +172,7 @@ class RssCategories {
       tamilt: 'வாடிக்கையாளர் சேவை',
       icon: 'connect-without-contact',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
+          'https://www.topjobs.lk/feeds/legasy/customer_relations_public_relations.rss',
     ),
     RssCategory(
       catid: 'LWT',
@@ -169,7 +182,7 @@ class RssCategories {
       tamilt: 'தளவாடம் / கிடங்கு / போக்குவரத்து',
       icon: 'directions-bus',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
+          'https://www.topjobs.lk/feeds/legasy/logistics_warehouse_transport.rss',
     ),
     RssCategory(
       catid: 'MAE',
@@ -178,7 +191,7 @@ class RssCategories {
       sinhalat: 'යාන්ත්‍රික/මෝටර් රථ/විදුලි',
       tamilt: 'பொறியியல் (Mech/Auto/Elec)',
       icon: 'car-repair',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/eng_mech_auto_elec.rss',
     ),
     RssCategory(
       catid: 'POS',
@@ -188,7 +201,7 @@ class RssCategories {
       tamilt: 'உற்பத்தி / செயல்பாடுகள்',
       icon: 'handyman',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
+          'https://www.topjobs.lk/feeds/legasy/manufacturing_operations.rss',
     ),
     RssCategory(
       catid: 'MAC',
@@ -198,7 +211,7 @@ class RssCategories {
       tamilt: 'ஊடகம் / விளம்பரம் / தொடர்பாடல்',
       icon: 'linked-camera',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
+          'https://www.topjobs.lk/feeds/legasy/media_advert_communication.rss',
     ),
     RssCategory(
       catid: 'HRF',
@@ -208,7 +221,7 @@ class RssCategories {
       tamilt: 'ஹோட்டல்கள் / உணவகம்',
       icon: 'liquor',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
+          'https://www.topjobs.lk/feeds/legasy/HOTELS_RESTAURANTS_HOSPITALITY.rss',
     ),
     RssCategory(
       catid: 'HOT',
@@ -217,7 +230,7 @@ class RssCategories {
       sinhalat: 'සංචාරක කර්මාන්තය',
       tamilt: 'சுற்றுலாத் துறை',
       icon: 'luggage',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/TRAVEL_TOURISM.rss',
     ),
     RssCategory(
       catid: 'SRF',
@@ -227,7 +240,7 @@ class RssCategories {
       tamilt: 'விளையாட்டு / உடற்பயிற்சி / பொழுதுபோக்கு',
       icon: 'directions-bike',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
+          'https://www.topjobs.lk/feeds/legasy/sports_fitness_recreation.rss',
     ),
     RssCategory(
       catid: 'MHN',
@@ -237,7 +250,7 @@ class RssCategories {
       tamilt: 'மருத்துவ துறை',
       icon: 'local-hospital',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
+          'https://www.topjobs.lk/feeds/legasy/hospital_nursing_healthcare.rss',
     ),
     RssCategory(
       catid: 'LEL',
@@ -246,7 +259,7 @@ class RssCategories {
       sinhalat: 'නීති',
       tamilt: 'சட்டம்',
       icon: 'local-police',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/legal_law.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/legal_law.rss',
     ),
     RssCategory(
       catid: 'SQC',
@@ -256,7 +269,7 @@ class RssCategories {
       tamilt: 'மேற்பார்வை / தர கட்டுப்பாடு',
       icon: 'checklist',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
+          'https://www.topjobs.lk/feeds/legasy/supervision_quality_control.rss',
     ),
     RssCategory(
       catid: 'APC',
@@ -265,7 +278,7 @@ class RssCategories {
       sinhalat: 'ඇඟලුම්/ඇඳුම් පැළඳුම්',
       tamilt: 'ஆடை தொழில் துறை',
       icon: 'dry-cleaning',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/apparel_clothing.rss',
     ),
     RssCategory(
       catid: 'AIM',
@@ -275,7 +288,7 @@ class RssCategories {
       tamilt: 'விமானம் / கடல்சார் துறை',
       icon: 'airplanemode-active',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
+          'https://www.topjobs.lk/feeds/legasy/ticketing_airline_marine.rss',
     ),
     RssCategory(
       catid: 'TAL',
@@ -284,7 +297,7 @@ class RssCategories {
       sinhalat: 'අධ්‍යාපන',
       tamilt: 'கல்வி துறை',
       icon: 'menu-book',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/EDUCATION.rss',
     ),
     RssCategory(
       catid: 'RLT',
@@ -293,7 +306,7 @@ class RssCategories {
       sinhalat: 'පර්යේෂණ සහ සංවර්ධන/විද්‍යාව',
       tamilt: 'அறிவியல் / ஆராய்ச்சி',
       icon: 'science',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/rnd_science_research.rss',
     ),
     RssCategory(
       catid: 'AGD',
@@ -303,7 +316,7 @@ class RssCategories {
       tamilt: 'விவசாயம் / சுற்றுச்சூழல்',
       icon: 'forest',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
+          'https://www.topjobs.lk/feeds/legasy/agriculture_dairy_environment.rss',
     ),
     RssCategory(
       catid: 'SEC',
@@ -312,7 +325,7 @@ class RssCategories {
       sinhalat: 'ආරක්ෂක',
       tamilt: 'பாதுகாப்பு / காவல்',
       icon: 'local-police',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/security.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/security.rss',
     ),
     RssCategory(
       catid: 'BEC',
@@ -321,7 +334,7 @@ class RssCategories {
       sinhalat: 'විලාසිතා/නිර්මාණය/අලංකාරය',
       tamilt: 'அழகு கலை / வடிவமைப்பு',
       icon: 'palette',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/fashion_design_beauty.rss',
     ),
     RssCategory(
       catid: 'IDV',
@@ -331,7 +344,7 @@ class RssCategories {
       tamilt: 'சர்வதேச வளர்ச்சி',
       icon: 'people-alt',
       feedUrl:
-          'http://www.topjobs.lk/feeds/legasy/international_development.rss',
+          'https://www.topjobs.lk/feeds/legasy/international_development.rss',
     ),
     RssCategory(
       catid: 'KPO',
@@ -340,7 +353,7 @@ class RssCategories {
       sinhalat: 'ව්‍යාපාර ක්‍රියාවලි බාහිරකරණය',
       tamilt: 'அறிவு செயல்முறை அவுட்சோர்சிங்',
       icon: 'supervised-user-circle',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/kpo_bpo.rss',
     ),
     RssCategory(
       catid: 'IME',
@@ -349,7 +362,7 @@ class RssCategories {
       sinhalat: 'ආනයන/අපනයන',
       tamilt: 'ஏற்றுமதி/இறக்குமதி',
       icon: 'import-export',
-      feedUrl: 'http://www.topjobs.lk/feeds/legasy/imports_exports.rss',
+      feedUrl: 'https://www.topjobs.lk/feeds/legasy/imports_exports.rss',
     ),
   ];
 

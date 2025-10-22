@@ -44,16 +44,6 @@ class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
           title: 'Home',
         ),
         TabItem(
-          icon: Icons.work_outline,
-          activeIcon: Icons.work,
-          title: 'All Jobs',
-        ),
-        TabItem(
-          icon: Icons.check_circle_outline,
-          activeIcon: Icons.check_circle,
-          title: 'Applied',
-        ),
-        TabItem(
           icon: Icons.favorite_border,
           activeIcon: Icons.favorite,
           title: 'Favorites',
@@ -63,6 +53,16 @@ class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
           activeIcon: Icons.phone_forwarded_outlined,
           title: 'Contact',
         ),
+        // TabItem(
+        //   icon: Icons.work_outline,
+        //   activeIcon: Icons.work,
+        //   title: 'All Jobs',
+        // ),
+        // TabItem(
+        //   icon: Icons.check_circle_outline,
+        //   activeIcon: Icons.check_circle,
+        //   title: 'Applied',
+        // ),
       ],
     );
   }

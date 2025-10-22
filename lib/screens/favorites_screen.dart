@@ -164,29 +164,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/home',
-                          (final route) => false,
-                        );
-                      },
-                      icon: const Icon(Icons.home, size: 20),
-                      label: const Text('Go to Home'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(height: 32),
+                    // ElevatedButton.icon(
+                    //   onPressed: () {
+                    //     Navigator.pushNamedAndRemoveUntil(
+                    //       context,
+                    //       '/home',
+                    //       (final route) => false,
+                    //     );
+                    //   },
+                    //   icon: const Icon(Icons.home, size: 20),
+                    //   label: const Text('Go to Home'),
+                    //   style: ElevatedButton.styleFrom(
+                    //     backgroundColor: Theme.of(context).primaryColor,
+                    //     foregroundColor: Colors.white,
+                    //     padding: const EdgeInsets.symmetric(
+                    //       horizontal: 24,
+                    //       vertical: 12,
+                    //     ),
+                    //     shape: RoundedRectangleBorder(
+                    //       borderRadius: BorderRadius.circular(8),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

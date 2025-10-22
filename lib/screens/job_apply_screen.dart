@@ -11,6 +11,8 @@ import '../services/web_scraping_service.dart';
 import '../services/applied_jobs_service.dart';
 import '../services/google_sheets_service.dart';
 import '../services/google_drive_service.dart';
+import '../services/bad_word_filter_service.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class JobApplyScreen extends StatefulWidget {
   const JobApplyScreen({
@@ -37,6 +39,10 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
   final TextEditingController _linkedinController = TextEditingController();
   final TextEditingController _coverLetterController = TextEditingController();
   final TextEditingController _companyEmailController = TextEditingController();
+
+  // Phone validation state
+  String _completePhoneNumber = '';
+  bool _isPhoneValid = false;
 
   // Focus nodes for navigation
   final FocusNode _fullNameFocus = FocusNode();
@@ -105,6 +111,57 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         _currentStep--;
       });
     }
+  }
+
+  // Clear current step fields
+  void _clearCurrentStep() {
+    setState(() {
+      switch (_currentStep) {
+        case 0:
+          // Clear Step 1 fields
+          _fullNameController.clear();
+          _phoneController.clear();
+          _emailController.clear();
+          _linkedinController.clear();
+          _completePhoneNumber = '';
+          _isPhoneValid = false;
+          break;
+        case 1:
+          // Clear Step 2 fields
+          _coverLetterController.clear();
+          _resumeFile = null;
+          _resumeFileName = null;
+          break;
+        case 2:
+          // Clear all fields for Step 3 (Review)
+          _fullNameController.clear();
+          _phoneController.clear();
+          _emailController.clear();
+          _linkedinController.clear();
+          _coverLetterController.clear();
+          _resumeFile = null;
+          _resumeFileName = null;
+          _completePhoneNumber = '';
+          _isPhoneValid = false;
+          break;
+      }
+    });
+
+    // Show snackbar confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_currentStep == 2
+            ? 'All fields cleared'
+            : 'Current step fields cleared'),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   // File picker method - using file_picker 10.3.3 for Android and iOS
@@ -217,15 +274,60 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
         .hasMatch(email);
   }
 
+  bool _isValidPhone(final String phone) {
+    // IntlPhoneField handles validation, so we just check if we have a valid state
+    return _isPhoneValid && _completePhoneNumber.isNotEmpty;
+  }
+
+  bool _isValidFullName(final String name) {
+    // Check for bad words first
+    if (BadWordFilterService.containsBadWords(name)) {
+      return false;
+    }
+    // Check if name has at least 2 words (first name and last name)
+    final nameParts = name.trim().split(RegExp(r'\s+'));
+    return nameParts.length >= 2 &&
+        nameParts.every((final part) => part.length >= 2);
+  }
+
+  bool _isValidLinkedIn(final String url) {
+    if (url.isEmpty) return true; // Optional field
+    // Check for bad words first
+    if (BadWordFilterService.containsBadWords(url)) {
+      return false;
+    }
+    // Check if it's a valid LinkedIn URL
+    return RegExp(
+      r'^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub|company)\/[a-zA-Z0-9_-]+\/?$',
+      caseSensitive: false,
+    ).hasMatch(url);
+  }
+
+  bool _isValidCoverLetter(final String text) {
+    // Check for bad words first
+    if (BadWordFilterService.containsBadWords(text)) {
+      return false;
+    }
+    // Check if cover letter has at least 50 characters and 10 words
+    final words = text.trim().split(RegExp(r'\s+'));
+    return text.trim().length >= 50 && words.length >= 10;
+  }
+
   bool _isStep1Valid() {
     return _fullNameController.text.isNotEmpty &&
+        _isValidFullName(_fullNameController.text) &&
         _phoneController.text.isNotEmpty &&
+        _isValidPhone(_phoneController.text) &&
         _emailController.text.isNotEmpty &&
-        _isValidEmail(_emailController.text);
+        _isValidEmail(_emailController.text) &&
+        (_linkedinController.text.isEmpty ||
+            _isValidLinkedIn(_linkedinController.text));
   }
 
   bool _isStep2Valid() {
-    return _coverLetterController.text.isNotEmpty && _resumeFile != null;
+    return _coverLetterController.text.isNotEmpty &&
+        _isValidCoverLetter(_coverLetterController.text) &&
+        _resumeFile != null;
   }
 
   Future<void> _sendEmail() async {
@@ -262,7 +364,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
       final result = await EmailService.sendJobApplication(
         applicantName: _fullNameController.text,
         applicantEmail: _emailController.text,
-        applicantPhone: _phoneController.text,
+        applicantPhone: _completePhoneNumber,
         linkedinId: _linkedinController.text,
         coverLetter: _coverLetterController.text,
         jobTitle: widget.job.title,
@@ -282,7 +384,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           'jobId': widget.job.jobId,
           'applicantName': _fullNameController.text,
           'applicantEmail': _emailController.text,
-          'applicantPhone': _phoneController.text,
+          'applicantPhone': _completePhoneNumber,
           'coverLetter': _coverLetterController.text,
           'resumeFileName': _resumeFileName,
         };
@@ -336,7 +438,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           final sheetsResult = await GoogleSheetsService.saveJobApplication(
             applicantName: _fullNameController.text,
             applicantEmail: _emailController.text,
-            applicantPhone: _phoneController.text,
+            applicantPhone: _completePhoneNumber,
             linkedinId: _linkedinController.text,
             coverLetter: _coverLetterController.text,
             jobTitle: widget.job.title,
@@ -692,8 +794,10 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
               ),
               child: Row(
                 children: [
+                  // Previous button with fixed width
                   if (_currentStep > 0)
-                    Expanded(
+                    SizedBox(
+                      width: 110,
                       child: OutlinedButton(
                         onPressed: _previousStep,
                         style: OutlinedButton.styleFrom(
@@ -705,20 +809,60 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.arrow_back,
                               size: 18,
                             ),
-                            SizedBox(width: 8),
-                            Text('Previous'),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Previous',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
-                  if (_currentStep > 0) const SizedBox(width: 16),
+                  if (_currentStep > 0) const SizedBox(width: 12),
+                  // Clear button with fixed width
+                  SizedBox(
+                    width: 80,
+                    child: OutlinedButton(
+                      onPressed: _clearCurrentStep,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                            color: Color.fromARGB(255, 223, 223, 223)),
+                        foregroundColor: Colors.grey.shade700,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.clear_all,
+                            size: 18,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Clear',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color.fromARGB(255, 112, 112, 112),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _isButtonEnabled()
                         ? DecoratedBox(
@@ -741,7 +885,10 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(_getNextButtonText()),
+                                  Text(
+                                    _getNextButtonText(),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                   const SizedBox(width: 8),
                                   if (_currentStep == 2)
                                     const Icon(
@@ -766,7 +913,10 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(_getNextButtonText()),
+                                Text(
+                                  _getNextButtonText(),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                                 const SizedBox(width: 8),
                                 Icon(
                                   _currentStep == 2
@@ -803,7 +953,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
 
   String _getNextButtonText() {
     if (_currentStep == 2) {
-      return 'Submit Application';
+      return 'Submit';
     }
     return 'Continue';
   }
@@ -977,7 +1127,26 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             border: Theme.of(context).inputDecorationTheme.border,
             focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
             enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             floatingLabelBehavior: FloatingLabelBehavior.never,
+            errorText: _fullNameController.text.isNotEmpty &&
+                    !_isValidFullName(_fullNameController.text)
+                ? (BadWordFilterService.containsBadWords(
+                        _fullNameController.text)
+                    ? 'Please avoid using inappropriate language'
+                    : 'Please enter your first and last name')
+                : null,
+            errorStyle: const TextStyle(
+              fontSize: 11,
+              color: Colors.red,
+            ),
           ),
           textInputAction: TextInputAction.next,
           onChanged: (final value) => setState(() {}),
@@ -1005,7 +1174,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        IntlPhoneField(
           controller: _phoneController,
           focusNode: _phoneFocus,
           decoration: InputDecoration(
@@ -1018,24 +1187,44 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-            prefixIconColor:
-                Theme.of(context).inputDecorationTheme.prefixIconColor ??
-                    Theme.of(context).colorScheme.onSurfaceVariant,
-            prefixStyle: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w400,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            prefixIcon: const Icon(Icons.phone),
             border: Theme.of(context).inputDecorationTheme.border,
             focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
             enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             floatingLabelBehavior: FloatingLabelBehavior.never,
+            counterText: '',
           ),
+          initialCountryCode: 'LK', // Default to Sri Lanka
           keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.next,
-          onChanged: (final value) => setState(() {}),
-          onFieldSubmitted: (final value) {
+          dropdownTextStyle: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          onChanged: (final phone) {
+            setState(() {
+              _completePhoneNumber = phone.completeNumber;
+              _isPhoneValid = phone.isValidNumber();
+            });
+          },
+          onCountryChanged: (final country) {
+            setState(() {
+              // Reset validation when country changes
+              _isPhoneValid = false;
+            });
+          },
+          onSubmitted: (final value) {
             _emailFocus.requestFocus();
           },
         ),
@@ -1155,10 +1344,30 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             border: Theme.of(context).inputDecorationTheme.border,
             focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
             enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             floatingLabelBehavior: FloatingLabelBehavior.never,
+            errorText: _linkedinController.text.isNotEmpty &&
+                    !_isValidLinkedIn(_linkedinController.text)
+                ? (BadWordFilterService.containsBadWords(
+                        _linkedinController.text)
+                    ? 'Please avoid using inappropriate language'
+                    : 'Please enter a valid LinkedIn URL')
+                : null,
+            errorStyle: const TextStyle(
+              fontSize: 11,
+              color: Colors.red,
+            ),
           ),
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
+          onChanged: (final value) => setState(() {}),
           onFieldSubmitted: (final value) {
             // For the last field, we can either move to next step if valid
             // or just unfocus the keyboard
@@ -1220,7 +1429,26 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
             border: Theme.of(context).inputDecorationTheme.border,
             focusedBorder: Theme.of(context).inputDecorationTheme.focusedBorder,
             enabledBorder: Theme.of(context).inputDecorationTheme.enabledBorder,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             floatingLabelBehavior: FloatingLabelBehavior.never,
+            errorText: _coverLetterController.text.isNotEmpty &&
+                    !_isValidCoverLetter(_coverLetterController.text)
+                ? (BadWordFilterService.containsBadWords(
+                        _coverLetterController.text)
+                    ? 'Please avoid using inappropriate language'
+                    : 'Cover letter must be at least 50 characters and 10 words')
+                : null,
+            errorStyle: const TextStyle(
+              fontSize: 11,
+              color: Colors.red,
+            ),
           ),
           maxLines: 6,
           textAlignVertical: TextAlignVertical.top,
@@ -1335,7 +1563,7 @@ class _JobApplyScreenState extends State<JobApplyScreen> {
           'Personal Information',
           [
             _buildReviewItem('Full Name', _fullNameController.text),
-            _buildReviewItem('Phone', _phoneController.text),
+            _buildReviewItem('Phone', _completePhoneNumber),
             _buildReviewItem('Email', _emailController.text),
             if (_linkedinController.text.isNotEmpty)
               _buildReviewItem('LinkedIn', _linkedinController.text),

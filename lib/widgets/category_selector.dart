@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/rss_categories.dart';
 import '../screens/category_job_screen.dart';
 import '../providers/job_provider.dart';
+import '../providers/language_provider.dart';
 import '../services/color_service.dart';
 
 // Sort options
@@ -146,8 +147,9 @@ class _CategorySelectorState extends State<CategorySelector> {
           ],
         ),
         const SizedBox(height: 15),
-        Consumer<JobProvider>(
-          builder: (final context, final jobProvider, final child) {
+        Consumer2<JobProvider, LanguageProvider>(
+          builder: (final context, final jobProvider, final languageProvider,
+              final child) {
             // Create a list of categories with their job counts
             final categoriesWithJobCounts =
                 RssCategories.categories.map((final category) {
@@ -162,7 +164,7 @@ class _CategorySelectorState extends State<CategorySelector> {
             // Limit to 6 categories initially, or show all if _showAllCategories is true
             final categoriesToShow = _showAllCategories
                 ? categoriesWithJobCounts
-                : categoriesWithJobCounts.take(6).toList();
+                : categoriesWithJobCounts.take(9).toList();
 
             return Column(
               children: [
@@ -179,7 +181,7 @@ class _CategorySelectorState extends State<CategorySelector> {
                   itemBuilder: (final context, final index) {
                     final categoryEntry = categoriesToShow[index];
                     final category = categoryEntry.key;
-                    final jobCount = categoryEntry.value;
+                    //final jobCount = categoryEntry.value;
 
                     // Get the color for this category (cached and consistent)
                     final categoryColor = _colorService
@@ -215,18 +217,26 @@ class _CategorySelectorState extends State<CategorySelector> {
                         child: Container(
                           margin: const EdgeInsets.all(2), // Border width
                           padding: EdgeInsets.zero,
+
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
                                 categoryColor,
                                 // categoryColor.withOpacity(0.6),
-                                categoryColor.withOpacity(0.3),
+                                categoryColor.withOpacity(0.8),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                             ),
                             borderRadius: BorderRadius.circular(
                                 7), // Slightly smaller radius
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black54,
+                                offset: Offset(0, 1),
+                                blurRadius: 1,
+                              ),
+                            ],
                           ),
                           child: Stack(
                             children: [
@@ -236,15 +246,15 @@ class _CategorySelectorState extends State<CategorySelector> {
                                 children: [
                                   Column(
                                     children: [
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: 15),
                                       Icon(
                                         _getIconData(category.icon),
                                         color: Colors.white,
                                         size: 30,
                                       ),
-                                      const SizedBox(height: 3),
+                                      const SizedBox(height: 2),
                                       SizedBox(
-                                        height: 37, // Fixed height for 2 lines
+                                        height: 38, // Fixed height for 2 lines
                                         child: Center(
                                           child: Text(
                                             category.minititle,
@@ -263,9 +273,10 @@ class _CategorySelectorState extends State<CategorySelector> {
                                       const SizedBox(height: 2),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8.0),
+                                            horizontal: 5.0),
                                         child: Text(
-                                          category.englisht,
+                                          category.getLocalizedTitle(
+                                              languageProvider.currentLanguage),
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 10,
@@ -278,35 +289,35 @@ class _CategorySelectorState extends State<CategorySelector> {
                                             ],
                                           ),
                                           textAlign: TextAlign.center,
-                                          maxLines: 1,
+                                          maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 5),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.black.withOpacity(0.8)
-                                          : categoryColor.withOpacity(1),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Text(
-                                      '$jobCount jobs',
-                                      style: TextStyle(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? categoryColor
-                                            : Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
+                                  // Container(
+                                  //   padding: const EdgeInsets.symmetric(
+                                  //       horizontal: 8, vertical: 4),
+                                  //   decoration: BoxDecoration(
+                                  //     color: Theme.of(context).brightness ==
+                                  //             Brightness.dark
+                                  //         ? Colors.black.withOpacity(0.8)
+                                  //         : categoryColor.withOpacity(1),
+                                  //     borderRadius: BorderRadius.circular(16),
+                                  //   ),
+                                  //   child: Text(
+                                  //     '$jobCount jobs',
+                                  //     style: TextStyle(
+                                  //       color: Theme.of(context).brightness ==
+                                  //               Brightness.dark
+                                  //           ? categoryColor
+                                  //           : Colors.white,
+                                  //       fontSize: 10,
+                                  //       fontWeight: FontWeight.w600,
+                                  //     ),
+                                  //   ),
+                                  // ),
                                   const SizedBox(height: 5),
                                 ],
                               ),
