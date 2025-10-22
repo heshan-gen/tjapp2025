@@ -7,10 +7,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/job_provider.dart';
 import '../services/applied_jobs_service.dart';
 import '../services/web_scraping_service.dart';
-import '../screens/job_detail_screen.dart';
+// COMMENTED OUT: No longer navigating to job detail screen
+// import '../screens/job_detail_screen.dart';
 
 class JobCardWidget extends StatefulWidget {
   final Job job;
@@ -95,6 +97,49 @@ class _JobCardWidgetState extends State<JobCardWidget>
         setState(() {
           _isLoadingAppliedStatus = false;
         });
+      }
+    }
+  }
+
+  Future<void> _launchJobInBrowser() async {
+    try {
+      // Generate the job URL
+      final Uri jobUrl = Uri(
+        scheme: 'https',
+        host: 'www.topjobs.lk',
+        path: 'employer/JobAdvertismentServlet',
+        queryParameters: {
+          'ac': widget.job.applicantCode,
+          'jc': widget.job.comments,
+          'ec': widget.job.guid,
+          'pg': 'tjappave', // Default application type
+        },
+      );
+
+      // Increment view count when job is opened
+      context.read<JobProvider>().incrementViewCount(widget.job.comments);
+
+      // Launch URL in external browser
+      if (await canLaunchUrl(jobUrl)) {
+        await launchUrl(jobUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch $jobUrl');
+      }
+    } catch (e) {
+      print('Error launching job URL: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open job: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -273,21 +318,25 @@ class _JobCardWidgetState extends State<JobCardWidget>
         ),
         child: InkWell(
           onTap: () {
-            // Increment view count when job is tapped
-            context.read<JobProvider>().incrementViewCount(widget.job.comments);
+            // COMMENTED OUT: Navigation to job detail screen
+            // // Increment view count when job is tapped
+            // context.read<JobProvider>().incrementViewCount(widget.job.comments);
 
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (final context) => JobDetailScreen(
-                  job: widget.job,
-                  sourceContext: widget.sourceContext,
-                ),
-              ),
-            ).then((final _) {
-              // Refresh applied status when returning from job detail
-              _checkIfJobApplied();
-            });
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (final context) => JobDetailScreen(
+            //       job: widget.job,
+            //       sourceContext: widget.sourceContext,
+            //     ),
+            //   ),
+            // ).then((final _) {
+            //   // Refresh applied status when returning from job detail
+            //   _checkIfJobApplied();
+            // });
+
+            // NEW: Launch job directly in browser
+            _launchJobInBrowser();
           },
           borderRadius: BorderRadius.circular(8),
           child: Padding(
