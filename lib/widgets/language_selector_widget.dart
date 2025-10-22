@@ -16,9 +16,22 @@ class LanguageSelectorWidget extends StatelessWidget {
       builder: (final context, final languageProvider, final child) {
         return PopupMenuButton<AppLanguage>(
           tooltip: languageProvider.languageTooltip,
-          icon: Icon(
-            languageProvider.languageIcon,
-            color: iconColor,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                languageProvider.languageCode,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                languageProvider.languageIcon,
+                color: iconColor,
+              ),
+            ],
           ),
           onSelected: (final AppLanguage language) {
             languageProvider.setLanguage(language);

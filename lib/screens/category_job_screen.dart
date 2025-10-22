@@ -30,6 +30,7 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _expandedCards = <String>{};
   final ColorService _colorService = ColorService();
+  bool _allCardsExpanded = true; // Default to expanded mode
 
   @override
   void initState() {
@@ -42,11 +43,51 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
             .loadJobsFromCategory(widget.category.feedUrl);
       }
     });
+
+    // Listen to JobProvider changes to expand cards when jobs are loaded
+    context.read<JobProvider>().addListener(_onJobProviderChanged);
+  }
+
+  void _onJobProviderChanged() {
+    if (!mounted) return;
+
+    final jobProvider = context.read<JobProvider>();
+    // Expand all cards when jobs are loaded and not loading
+    if (!jobProvider.isLoading && jobProvider.categoryJobs.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((final _) {
+        if (mounted && _expandedCards.isEmpty) {
+          _expandAllCards();
+        }
+      });
+    }
+  }
+
+  void _expandAllCards() {
+    if (mounted) {
+      final jobProvider = context.read<JobProvider>();
+      setState(() {
+        _expandedCards.clear();
+        _expandedCards.addAll(
+          jobProvider.categoryJobs.map((final job) => job.comments),
+        );
+        _allCardsExpanded = true;
+      });
+    }
+  }
+
+  void _collapseAllCards() {
+    if (mounted) {
+      setState(() {
+        _expandedCards.clear();
+        _allCardsExpanded = false;
+      });
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    context.read<JobProvider>().removeListener(_onJobProviderChanged);
     super.dispose();
   }
 
@@ -254,6 +295,9 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                             } else {
                               _expandedCards.add(job.comments);
                             }
+                            // Update the global expansion state
+                            _allCardsExpanded = _expandedCards.length ==
+                                context.read<JobProvider>().categoryJobs.length;
                           });
                         }
                       },
@@ -309,10 +353,12 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
                 decoration: InputDecoration(
                   hintText:
                       'Search jobs in ${widget.category.englisht} by title, company, location, or skills...',
-                  hintStyle:
-                      TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
-                  prefixIcon:
-                      Icon(Icons.search, size: 20, color: Theme.of(context).textTheme.bodySmall?.color),
+                  hintStyle: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).textTheme.bodySmall?.color),
+                  prefixIcon: Icon(Icons.search,
+                      size: 20,
+                      color: Theme.of(context).textTheme.bodySmall?.color),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 20),
@@ -375,24 +421,16 @@ class _CategoryJobScreenState extends State<CategoryJobScreen> {
               borderRadius: BorderRadius.circular(5),
             ),
             child: IconButton(
-              icon: const Icon(Icons.expand_rounded,
-                  size: 20, color: Colors.white),
+              icon: Icon(
+                  _allCardsExpanded ? Icons.unfold_less : Icons.unfold_more,
+                  size: 20,
+                  color: Colors.white),
               onPressed: () {
                 // Toggle all cards expansion
-                if (mounted) {
-                  setState(() {
-                    if (_expandedCards.length ==
-                        context.read<JobProvider>().categoryJobs.length) {
-                      _expandedCards.clear();
-                    } else {
-                      _expandedCards.addAll(
-                        context
-                            .read<JobProvider>()
-                            .categoryJobs
-                            .map((final job) => job.comments),
-                      );
-                    }
-                  });
+                if (_allCardsExpanded) {
+                  _collapseAllCards();
+                } else {
+                  _expandAllCards();
                 }
               },
             ),

@@ -9,13 +9,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../providers/theme_provider.dart';
-import '../services/email_service.dart';
+// import '../services/email_service.dart';
 import '../theme/app_theme.dart';
 import '../services/contact_numbers_service.dart';
 import '../models/contact_numbers.dart';
 import '../services/recaptcha_service.dart';
-import '../services/bad_word_filter_service.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
+// import '../services/bad_word_filter_service.dart';
+// import 'package:intl_phone_field/intl_phone_field.dart';
 
 class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
@@ -25,20 +25,20 @@ class ContactUsScreen extends StatefulWidget {
 }
 
 class _ContactUsScreenState extends State<ContactUsScreen> {
-  final _formKey = GlobalKey<FormState>();
+  //final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  bool _isSubmitting = false;
+  //bool _isSubmitting = false;
   ContactNumbers? _contactNumbers;
   bool _isLoadingContactNumbers = false;
-  AutovalidateMode _autovalidateMode = AutovalidateMode.onUserInteraction;
+  //AutovalidateMode _autovalidateMode = AutovalidateMode.onUserInteraction;
 
   // Phone validation state
-  String _completePhoneNumber = '';
-  bool _isPhoneValid = false;
+  // String _completePhoneNumber = '';
+  // bool _isPhoneValid = false;
 
   // Company location coordinates (Colombo 03, Sri Lanka)
   static const LatLng _companyLocation =
@@ -148,175 +148,175 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     }
   }
 
-  void _clearForm() {
-    // Clear all text fields
-    _nameController.clear();
-    _emailController.clear();
-    _phoneController.clear();
-    _subjectController.clear();
-    _messageController.clear();
+  // void _clearForm() {
+  //   // Clear all text fields
+  //   _nameController.clear();
+  //   _emailController.clear();
+  //   _phoneController.clear();
+  //   _subjectController.clear();
+  //   _messageController.clear();
 
-    // Reset form validation state
-    _formKey.currentState?.reset();
+  //   // Reset form validation state
+  //   _formKey.currentState?.reset();
 
-    // Reset phone validation state
-    setState(() {
-      _completePhoneNumber = '';
-      _isPhoneValid = false;
-      _autovalidateMode = AutovalidateMode.disabled;
-    });
+  //   // Reset phone validation state
+  //   setState(() {
+  //     _completePhoneNumber = '';
+  //     _isPhoneValid = false;
+  //     _autovalidateMode = AutovalidateMode.disabled;
+  //   });
 
-    // Show confirmation message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Form cleared'),
-        backgroundColor: Colors.grey[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  //   // Show confirmation message
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: const Text('Form cleared'),
+  //       backgroundColor: Colors.grey[700],
+  //       behavior: SnackBarBehavior.floating,
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(8),
+  //       ),
+  //       duration: const Duration(seconds: 2),
+  //     ),
+  //   );
+  // }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isSubmitting = true;
-      });
+  // void _submitForm() async {
+  //   if (_formKey.currentState!.validate()) {
+  //     setState(() {
+  //       _isSubmitting = true;
+  //     });
 
-      try {
-        // Get reCAPTCHA token
-        final recaptchaToken = await RecaptchaService.getToken();
+  //     try {
+  //       // Get reCAPTCHA token
+  //       final recaptchaToken = await RecaptchaService.getToken();
 
-        if (recaptchaToken == null) {
-          setState(() {
-            _isSubmitting = false;
-          });
+  //       if (recaptchaToken == null) {
+  //         setState(() {
+  //           _isSubmitting = false;
+  //         });
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                    'reCAPTCHA verification failed. Please try again.'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-          return;
-        }
+  //         if (mounted) {
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(
+  //               content: const Text(
+  //                   'reCAPTCHA verification failed. Please try again.'),
+  //               backgroundColor: Colors.red,
+  //               behavior: SnackBarBehavior.floating,
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               duration: const Duration(seconds: 4),
+  //             ),
+  //           );
+  //         }
+  //         return;
+  //       }
 
-        // Verify reCAPTCHA token with backend
-        final isRecaptchaValid =
-            await RecaptchaService.verifyTokenWithBackend(recaptchaToken);
+  //       // Verify reCAPTCHA token with backend
+  //       final isRecaptchaValid =
+  //           await RecaptchaService.verifyTokenWithBackend(recaptchaToken);
 
-        if (!isRecaptchaValid) {
-          setState(() {
-            _isSubmitting = false;
-          });
+  //       if (!isRecaptchaValid) {
+  //         setState(() {
+  //           _isSubmitting = false;
+  //         });
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                    'reCAPTCHA verification failed. Please try again.'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-          return;
-        }
+  //         if (mounted) {
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(
+  //               content: const Text(
+  //                   'reCAPTCHA verification failed. Please try again.'),
+  //               backgroundColor: Colors.red,
+  //               behavior: SnackBarBehavior.floating,
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               duration: const Duration(seconds: 4),
+  //             ),
+  //           );
+  //         }
+  //         return;
+  //       }
 
-        // Send actual email
-        final result = await EmailService.sendContactForm(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          subject: _subjectController.text.trim(),
-          message:
-              'Phone: $_completePhoneNumber\n\n${_messageController.text.trim()}',
-        );
+  //       // Send actual email
+  //       final result = await EmailService.sendContactForm(
+  //         name: _nameController.text.trim(),
+  //         email: _emailController.text.trim(),
+  //         subject: _subjectController.text.trim(),
+  //         message:
+  //             'Phone: $_completePhoneNumber\n\n${_messageController.text.trim()}',
+  //       );
 
-        setState(() {
-          _isSubmitting = false;
-        });
+  //       setState(() {
+  //         _isSubmitting = false;
+  //       });
 
-        if (mounted) {
-          if (result.success) {
-            // Show success message
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                    'Thank you for your message! We\'ll get back to you soon.'),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                duration: const Duration(seconds: 4),
-              ),
-            );
+  //       if (mounted) {
+  //         if (result.success) {
+  //           // Show success message
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(
+  //               content: const Text(
+  //                   'Thank you for your message! We\'ll get back to you soon.'),
+  //               backgroundColor: Colors.green,
+  //               behavior: SnackBarBehavior.floating,
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               duration: const Duration(seconds: 4),
+  //             ),
+  //           );
 
-            // Clear form
-            _nameController.clear();
-            _emailController.clear();
-            _phoneController.clear();
-            _subjectController.clear();
-            _messageController.clear();
+  //           // Clear form
+  //           _nameController.clear();
+  //           _emailController.clear();
+  //           _phoneController.clear();
+  //           _subjectController.clear();
+  //           _messageController.clear();
 
-            // Reset form validation state
-            _formKey.currentState?.reset();
-          } else {
-            // Show error message
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to send message: ${result.message}'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: 'Retry',
-                  textColor: Colors.white,
-                  onPressed: _submitForm,
-                ),
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        setState(() {
-          _isSubmitting = false;
-        });
+  //           // Reset form validation state
+  //           _formKey.currentState?.reset();
+  //         } else {
+  //           // Show error message
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(
+  //               content: Text('Failed to send message: ${result.message}'),
+  //               backgroundColor: Colors.red,
+  //               behavior: SnackBarBehavior.floating,
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               duration: const Duration(seconds: 5),
+  //               action: SnackBarAction(
+  //                 label: 'Retry',
+  //                 textColor: Colors.white,
+  //                 onPressed: _submitForm,
+  //               ),
+  //             ),
+  //           );
+  //         }
+  //       }
+  //     } catch (e) {
+  //       setState(() {
+  //         _isSubmitting = false;
+  //       });
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('An error occurred: ${e.toString()}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    }
-  }
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('An error occurred: ${e.toString()}'),
+  //             backgroundColor: Colors.red,
+  //             behavior: SnackBarBehavior.floating,
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //             duration: const Duration(seconds: 5),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(final BuildContext context) {
@@ -354,7 +354,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             const SizedBox(height: 12),
             _buildContactInfo(),
             const SizedBox(height: 12),
-            _buildContactForm(),
+            // _buildContactForm(),
+            // const SizedBox(height: 12),
+            _buildSupportButton(),
             const SizedBox(height: 12),
             _buildAppSupportSection(),
             const SizedBox(height: 12),
@@ -456,8 +458,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             _buildContactItem(
               icon: Icons.email,
               title: 'Email',
-              subtitle: 'heshan@genesiis.com',
-              onTap: () => _launchEmail('heshan@genesiis.com'),
+              subtitle: 'support@topjobs.lk',
+              onTap: () => _launchEmail('support@topjobs.lk'),
             ),
             const SizedBox(height: 12),
             _buildContactItem(
@@ -611,7 +613,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'topjobs - Genesiis Software Pvt Ltd',
+                                'Genesiis Software Pvt Ltd',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -717,7 +719,429 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     );
   }
 
-  Widget _buildContactForm() {
+  // Widget _buildContactForm() {
+  //   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+  //   return Card(
+  //     elevation: 2,
+  //     shape: RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.circular(5),
+  //     ),
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(20),
+  //       child: Form(
+  //         key: _formKey,
+  //         autovalidateMode: _autovalidateMode,
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             // Modern header with icon
+  //             Row(
+  //               children: [
+  //                 Container(
+  //                   padding: const EdgeInsets.all(8),
+  //                   decoration: BoxDecoration(
+  //                     gradient: LinearGradient(
+  //                       colors: [
+  //                         Theme.of(context).primaryColor,
+  //                         Theme.of(context).primaryColor.withOpacity(0.8),
+  //                       ],
+  //                       begin: Alignment.topLeft,
+  //                       end: Alignment.bottomRight,
+  //                     ),
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: const Icon(
+  //                     Icons.send_rounded,
+  //                     color: Colors.white,
+  //                     size: 20,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                     children: [
+  //                       Text(
+  //                         'Send us a Message',
+  //                         style:
+  //                             Theme.of(context).textTheme.titleMedium?.copyWith(
+  //                                   fontWeight: FontWeight.bold,
+  //                                   color: isDarkMode
+  //                                       ? Colors.white
+  //                                       : Colors.grey[800],
+  //                                 ),
+  //                       ),
+  //                       const SizedBox(height: 1),
+  //                       Text(
+  //                         'We\'ll get back to you within 24 hours',
+  //                         style:
+  //                             Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                                   color: isDarkMode
+  //                                       ? Colors.grey[400]
+  //                                       : Colors.grey[600],
+  //                                 ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // Compact form fields in a more modern layout
+  //             Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: _buildModernTextField(
+  //                     controller: _nameController,
+  //                     label: 'Name',
+  //                     icon: Icons.person_outline_rounded,
+  //                     validator: (final value) {
+  //                       if (value == null || value.isEmpty) {
+  //                         return 'Required';
+  //                       }
+  //                       if (BadWordFilterService.containsBadWords(value)) {
+  //                         return 'Inappropriate language';
+  //                       }
+  //                       if (value.trim().length < 2) {
+  //                         return 'Min 2 chars';
+  //                       }
+  //                       if (value.trim().length > 50) {
+  //                         return 'Max 50 chars';
+  //                       }
+  //                       if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+  //                         return 'Only letters';
+  //                       }
+  //                       return null;
+  //                     },
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: _buildModernTextField(
+  //                     controller: _emailController,
+  //                     label: 'Email',
+  //                     icon: Icons.email_outlined,
+  //                     keyboardType: TextInputType.emailAddress,
+  //                     validator: (final value) {
+  //                       if (value == null || value.isEmpty) {
+  //                         return 'Required';
+  //                       }
+  //                       if (BadWordFilterService.containsBadWords(value)) {
+  //                         return 'Inappropriate language';
+  //                       }
+  //                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+  //                           .hasMatch(value)) {
+  //                         return 'Invalid email';
+  //                       }
+  //                       return null;
+  //                     },
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             const SizedBox(height: 16),
+
+  //             // Phone number field with country code selector
+  //             IntlPhoneField(
+  //               controller: _phoneController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Phone Number',
+  //                 labelStyle: TextStyle(
+  //                   color: Theme.of(context).brightness == Brightness.dark
+  //                       ? Colors.grey[400]
+  //                       : Colors.grey[600],
+  //                   fontSize: 12,
+  //                 ),
+  //                 prefixIcon: Icon(
+  //                   Icons.phone_outlined,
+  //                   color: Theme.of(context).brightness == Brightness.dark
+  //                       ? Colors.grey[400]
+  //                       : Colors.grey[600],
+  //                   size: 20,
+  //                 ),
+  //                 filled: true,
+  //                 fillColor: Theme.of(context).brightness == Brightness.dark
+  //                     ? Colors.white.withOpacity(0.05)
+  //                     : Colors.grey[50],
+  //                 border: OutlineInputBorder(
+  //                   borderRadius: BorderRadius.circular(6),
+  //                   borderSide: BorderSide(
+  //                     color: Theme.of(context).brightness == Brightness.dark
+  //                         ? Colors.grey[700]!
+  //                         : Colors.grey[300]!,
+  //                     width: 1,
+  //                   ),
+  //                 ),
+  //                 enabledBorder: OutlineInputBorder(
+  //                   borderRadius: BorderRadius.circular(6),
+  //                   borderSide: BorderSide(
+  //                     color: Theme.of(context).brightness == Brightness.dark
+  //                         ? Colors.grey[700]!
+  //                         : Colors.grey[300]!,
+  //                     width: 1,
+  //                   ),
+  //                 ),
+  //                 focusedBorder: OutlineInputBorder(
+  //                   borderRadius: BorderRadius.circular(6),
+  //                   borderSide: BorderSide(
+  //                     color: Theme.of(context).primaryColor,
+  //                     width: 2,
+  //                   ),
+  //                 ),
+  //                 errorBorder: OutlineInputBorder(
+  //                   borderRadius: BorderRadius.circular(6),
+  //                   borderSide: const BorderSide(
+  //                     color: Colors.red,
+  //                     width: 1,
+  //                   ),
+  //                 ),
+  //                 focusedErrorBorder: OutlineInputBorder(
+  //                   borderRadius: BorderRadius.circular(6),
+  //                   borderSide: const BorderSide(
+  //                     color: Colors.red,
+  //                     width: 2,
+  //                   ),
+  //                 ),
+  //                 counterText: '',
+  //                 contentPadding: const EdgeInsets.symmetric(
+  //                   horizontal: 8,
+  //                   vertical: 8,
+  //                 ),
+  //               ),
+  //               initialCountryCode: 'LK',
+  //               dropdownTextStyle: TextStyle(
+  //                 fontSize: 13,
+  //                 color: Theme.of(context).brightness == Brightness.dark
+  //                     ? Colors.white
+  //                     : Colors.grey[800],
+  //               ),
+  //               style: TextStyle(
+  //                 fontSize: 15,
+  //                 color: Theme.of(context).brightness == Brightness.dark
+  //                     ? Colors.white
+  //                     : Colors.grey[800],
+  //               ),
+  //               invalidNumberMessage: 'Invalid phone number',
+  //               onChanged: (final phone) {
+  //                 setState(() {
+  //                   _completePhoneNumber = phone.completeNumber;
+  //                   _isPhoneValid = phone.isValidNumber();
+  //                 });
+  //               },
+  //               onCountryChanged: (final country) {
+  //                 setState(() {
+  //                   _isPhoneValid = false;
+  //                 });
+  //               },
+  //               validator: (final phone) {
+  //                 if (phone == null || phone.number.isEmpty) {
+  //                   return 'Phone number required';
+  //                 }
+  //                 if (!_isPhoneValid) {
+  //                   return 'Invalid phone number';
+  //                 }
+  //                 return null;
+  //               },
+  //             ),
+  //             const SizedBox(height: 16),
+
+  //             _buildModernTextField(
+  //               controller: _subjectController,
+  //               label: 'Subject',
+  //               icon: Icons.subject_outlined,
+  //               validator: (final value) {
+  //                 if (value == null || value.isEmpty) {
+  //                   return 'Please enter a subject';
+  //                 }
+  //                 if (BadWordFilterService.containsBadWords(value)) {
+  //                   return 'Please avoid using inappropriate language';
+  //                 }
+  //                 if (value.trim().length < 3) {
+  //                   return 'Subject must be at least 3 characters';
+  //                 }
+  //                 if (value.trim().length > 100) {
+  //                   return 'Subject must be less than 100 characters';
+  //                 }
+  //                 return null;
+  //               },
+  //             ),
+  //             const SizedBox(height: 16),
+
+  //             _buildModernTextField(
+  //               controller: _messageController,
+  //               label: 'Your message',
+  //               icon: Icons.message_outlined,
+  //               maxLines: 3,
+  //               validator: (final value) {
+  //                 if (value == null || value.isEmpty) {
+  //                   return 'Please enter your message';
+  //                 }
+  //                 if (BadWordFilterService.containsBadWords(value)) {
+  //                   return 'Please avoid using inappropriate language';
+  //                 }
+  //                 if (value.trim().length < 10) {
+  //                   return 'Message must be at least 10 characters';
+  //                 }
+  //                 if (value.trim().length > 1000) {
+  //                   return 'Message must be less than 1000 characters';
+  //                 }
+  //                 return null;
+  //               },
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // Form action buttons
+  //             Row(
+  //               children: [
+  //                 // Clear button
+  //                 Expanded(
+  //                   flex: 2,
+  //                   child: Container(
+  //                     height: 52,
+  //                     decoration: BoxDecoration(
+  //                       color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+  //                       borderRadius: BorderRadius.circular(8),
+  //                       border: Border.all(
+  //                         color: isDarkMode
+  //                             ? Colors.grey[600]!
+  //                             : Colors.grey[400]!,
+  //                         width: 1,
+  //                       ),
+  //                     ),
+  //                     child: Material(
+  //                       color: Colors.transparent,
+  //                       child: InkWell(
+  //                         onTap: _isSubmitting ? null : _clearForm,
+  //                         borderRadius: BorderRadius.circular(8),
+  //                         child: Center(
+  //                           child: Row(
+  //                             mainAxisAlignment: MainAxisAlignment.center,
+  //                             children: [
+  //                               Text(
+  //                                 'Clear',
+  //                                 style: Theme.of(context)
+  //                                     .textTheme
+  //                                     .titleMedium
+  //                                     ?.copyWith(
+  //                                       color: isDarkMode
+  //                                           ? Colors.grey[300]
+  //                                           : Colors.grey[700],
+  //                                       fontWeight: FontWeight.w600,
+  //                                     ),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+  //                 // Send Message button
+  //                 Expanded(
+  //                   flex: 3,
+  //                   child: Container(
+  //                     height: 52,
+  //                     decoration: BoxDecoration(
+  //                       gradient: LinearGradient(
+  //                         colors: [
+  //                           Theme.of(context).primaryColor,
+  //                           Theme.of(context).primaryColor.withOpacity(0.8),
+  //                         ],
+  //                         begin: Alignment.topLeft,
+  //                         end: Alignment.bottomRight,
+  //                       ),
+  //                       borderRadius: BorderRadius.circular(8),
+  //                       boxShadow: [
+  //                         BoxShadow(
+  //                           color:
+  //                               Theme.of(context).primaryColor.withOpacity(0.3),
+  //                           blurRadius: 12,
+  //                           offset: const Offset(0, 4),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     child: Material(
+  //                       color: Colors.transparent,
+  //                       child: InkWell(
+  //                         onTap: _isSubmitting ? null : _submitForm,
+  //                         borderRadius: BorderRadius.circular(8),
+  //                         child: Center(
+  //                           child: _isSubmitting
+  //                               ? SizedBox(
+  //                                   height: 20,
+  //                                   width: 20,
+  //                                   child: LoadingAnimationWidget.beat(
+  //                                     color: Colors.white,
+  //                                     size: 20,
+  //                                   ),
+  //                                 )
+  //                               : Row(
+  //                                   mainAxisAlignment: MainAxisAlignment.center,
+  //                                   children: [
+  //                                     const Icon(
+  //                                       Icons.send_rounded,
+  //                                       color: Colors.white,
+  //                                       size: 20,
+  //                                     ),
+  //                                     const SizedBox(width: 8),
+  //                                     Text(
+  //                                       'Send Message',
+  //                                       style: Theme.of(context)
+  //                                           .textTheme
+  //                                           .titleMedium
+  //                                           ?.copyWith(
+  //                                             color: Colors.white,
+  //                                             fontWeight: FontWeight.w600,
+  //                                           ),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             const SizedBox(height: 12),
+
+  //             // reCAPTCHA protection notice
+  //             Row(
+  //               children: [
+  //                 Icon(
+  //                   Icons.security,
+  //                   size: 16,
+  //                   color: Theme.of(context)
+  //                       .textTheme
+  //                       .bodySmall
+  //                       ?.color
+  //                       ?.withOpacity(0.6),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Text(
+  //                   'This form is protected by reCAPTCHA v3',
+  //                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         color: Theme.of(context)
+  //                             .textTheme
+  //                             .bodySmall
+  //                             ?.color
+  //                             ?.withOpacity(0.6),
+  //                         fontSize: 11,
+  //                       ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildSupportButton() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -726,494 +1150,168 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         borderRadius: BorderRadius.circular(5),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: _autovalidateMode,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Modern header with icon
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).primaryColor,
-                          Theme.of(context).primaryColor.withOpacity(0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.support_agent,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Need Help?',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.grey[800],
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).primaryColor,
+                    Theme.of(context).primaryColor.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _launchUrl(
+                      'https://www.topjobs.lk/do.landing?CO=DF&to=support@topjobs.lk&topic=topjobs%20-%20Enquiry%20-%20Mobile%20Application'),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const Icon(
+                          Icons.email_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          'Send us a Message',
+                          'Contact Support',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : Colors.grey[800],
-                                  ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          'We\'ll get back to you within 24 hours',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: isDarkMode
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
                                   ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 24),
-
-              // Compact form fields in a more modern layout
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModernTextField(
-                      controller: _nameController,
-                      label: 'Name',
-                      icon: Icons.person_outline_rounded,
-                      validator: (final value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Required';
-                        }
-                        if (BadWordFilterService.containsBadWords(value)) {
-                          return 'Inappropriate language';
-                        }
-                        if (value.trim().length < 2) {
-                          return 'Min 2 chars';
-                        }
-                        if (value.trim().length > 50) {
-                          return 'Max 50 chars';
-                        }
-                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-                          return 'Only letters';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildModernTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (final value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Required';
-                        }
-                        if (BadWordFilterService.containsBadWords(value)) {
-                          return 'Inappropriate language';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Invalid email';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Phone number field with country code selector
-              IntlPhoneField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Get direct support from our team',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     fontSize: 12,
                   ),
-                  prefixIcon: Icon(
-                    Icons.phone_outlined,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[400]
-                        : Colors.grey[600],
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[700]!
-                          : Colors.grey[300]!,
-                      width: 1,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[700]!
-                          : Colors.grey[300]!,
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).primaryColor,
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(
-                      color: Colors.red,
-                      width: 1,
-                    ),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(
-                      color: Colors.red,
-                      width: 2,
-                    ),
-                  ),
-                  counterText: '',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                ),
-                initialCountryCode: 'LK',
-                dropdownTextStyle: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.grey[800],
-                ),
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.grey[800],
-                ),
-                invalidNumberMessage: 'Invalid phone number',
-                onChanged: (final phone) {
-                  setState(() {
-                    _completePhoneNumber = phone.completeNumber;
-                    _isPhoneValid = phone.isValidNumber();
-                  });
-                },
-                onCountryChanged: (final country) {
-                  setState(() {
-                    _isPhoneValid = false;
-                  });
-                },
-                validator: (final phone) {
-                  if (phone == null || phone.number.isEmpty) {
-                    return 'Phone number required';
-                  }
-                  if (!_isPhoneValid) {
-                    return 'Invalid phone number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              _buildModernTextField(
-                controller: _subjectController,
-                label: 'Subject',
-                icon: Icons.subject_outlined,
-                validator: (final value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a subject';
-                  }
-                  if (BadWordFilterService.containsBadWords(value)) {
-                    return 'Please avoid using inappropriate language';
-                  }
-                  if (value.trim().length < 3) {
-                    return 'Subject must be at least 3 characters';
-                  }
-                  if (value.trim().length > 100) {
-                    return 'Subject must be less than 100 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              _buildModernTextField(
-                controller: _messageController,
-                label: 'Your message',
-                icon: Icons.message_outlined,
-                maxLines: 3,
-                validator: (final value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your message';
-                  }
-                  if (BadWordFilterService.containsBadWords(value)) {
-                    return 'Please avoid using inappropriate language';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'Message must be at least 10 characters';
-                  }
-                  if (value.trim().length > 1000) {
-                    return 'Message must be less than 1000 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Form action buttons
-              Row(
-                children: [
-                  // Clear button
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.grey[600]!
-                              : Colors.grey[400]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _isSubmitting ? null : _clearForm,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Clear',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: isDarkMode
-                                            ? Colors.grey[300]
-                                            : Colors.grey[700],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Send Message button
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor,
-                            Theme.of(context).primaryColor.withOpacity(0.8),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                Theme.of(context).primaryColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _isSubmitting ? null : _submitForm,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Center(
-                            child: _isSubmitting
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: LoadingAnimationWidget.beat(
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.send_rounded,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Send Message',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // reCAPTCHA protection notice
-              Row(
-                children: [
-                  Icon(
-                    Icons.security,
-                    size: 16,
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.color
-                        ?.withOpacity(0.6),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'This form is protected by reCAPTCHA v3',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.color
-                              ?.withOpacity(0.6),
-                          fontSize: 11,
-                        ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildModernTextField({
-    required final TextEditingController controller,
-    required final String label,
-    required final IconData icon,
-    final TextInputType? keyboardType,
-    final int maxLines = 1,
-    final String? Function(String?)? validator,
-  }) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  // Widget _buildModernTextField({
+  //   required final TextEditingController controller,
+  //   required final String label,
+  //   required final IconData icon,
+  //   final TextInputType? keyboardType,
+  //   final int maxLines = 1,
+  //   final String? Function(String?)? validator,
+  // }) {
+  //   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      validator: validator,
-      style: TextStyle(
-        color: isDarkMode ? Colors.white : Colors.grey[800],
-        fontSize: 15,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-          fontSize: 12,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-          size: 20,
-        ),
-        filled: true,
-        fillColor:
-            isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(
-            color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(
-            color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 1,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 2,
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 8,
-        ),
-      ),
-    );
-  }
+  //   return TextFormField(
+  //     controller: controller,
+  //     keyboardType: keyboardType,
+  //     maxLines: maxLines,
+  //     validator: validator,
+  //     style: TextStyle(
+  //       color: isDarkMode ? Colors.white : Colors.grey[800],
+  //       fontSize: 15,
+  //     ),
+  //     decoration: InputDecoration(
+  //       labelText: label,
+  //       labelStyle: TextStyle(
+  //         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+  //         fontSize: 12,
+  //       ),
+  //       prefixIcon: Icon(
+  //         icon,
+  //         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+  //         size: 20,
+  //       ),
+  //       filled: true,
+  //       fillColor:
+  //           isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+  //       border: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(6),
+  //         borderSide: BorderSide(
+  //           color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+  //           width: 1,
+  //         ),
+  //       ),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(6),
+  //         borderSide: BorderSide(
+  //           color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+  //           width: 1,
+  //         ),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(6),
+  //         borderSide: BorderSide(
+  //           color: Theme.of(context).primaryColor,
+  //           width: 2,
+  //         ),
+  //       ),
+  //       errorBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(6),
+  //         borderSide: const BorderSide(
+  //           color: Colors.red,
+  //           width: 1,
+  //         ),
+  //       ),
+  //       focusedErrorBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(6),
+  //         borderSide: const BorderSide(
+  //           color: Colors.red,
+  //           width: 2,
+  //         ),
+  //       ),
+  //       contentPadding: const EdgeInsets.symmetric(
+  //         horizontal: 8,
+  //         vertical: 8,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildSocialLinks() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -1418,7 +1516,6 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
             ),
             const SizedBox(height: 16),
             _buildTimeSlot('Monday - Friday', '8:30 AM - 5:00 PM'),
-            _buildTimeSlot('Saturday, Sunday', 'Closed'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
