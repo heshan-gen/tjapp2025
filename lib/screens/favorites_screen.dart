@@ -88,40 +88,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       body: Consumer<JobProvider>(
         builder: (final context, final jobProvider, final child) {
-          final favoriteJobs = jobProvider.getFavoriteJobs().map((final job) {
-            final viewCount = jobProvider.getViewCount(job.comments);
-            final ratingStats = jobProvider.getJobRatingStats(job.comments);
-            final averageRating = ratingStats['averageRating'] as double;
-            final totalRatings = ratingStats['totalRatings'] as int;
-
-            return Job(
-              id: job.id,
-              title: job.title,
-              company: job.company,
-              location: job.location,
-              salary: job.salary,
-              description: job.description,
-              requirements: job.requirements,
-              type: job.type,
-              experience: job.experience,
-              postedDate: job.postedDate,
-              closingDate: job.closingDate,
-              author: job.author,
-              jobId: job.jobId,
-              comments: job.comments,
-              applicantCode: job.applicantCode,
-              feedUrl: job.feedUrl,
-              publisher: job.publisher,
-              isRemote: job.isRemote,
-              skills: job.skills,
-              guid: job.guid,
-              isFavorite: job.isFavorite,
-              gradientColors: job.gradientColors,
-              viewCount: viewCount,
-              averageRating: averageRating,
-              totalRatings: totalRatings,
+          // Show loading indicator if jobs are still loading
+          if (jobProvider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
             );
-          }).toList();
+          }
+
+          final favoriteJobs = jobProvider.getFavoriteJobs();
 
           if (favoriteJobs.isEmpty) {
             return GestureDetector(

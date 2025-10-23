@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text(
-          'topjobs',
+          'topjobs.lk',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.normal,

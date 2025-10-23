@@ -1092,6 +1092,11 @@ class JobProvider with ChangeNotifier {
   }
 
   List<Job> getFavoriteJobs() {
+    // Only return favorites if jobs are loaded
+    if (_jobs.isEmpty) {
+      return [];
+    }
+
     return _jobs
         .where((final job) => _favoriteJobIds.contains(job.comments))
         .toList();

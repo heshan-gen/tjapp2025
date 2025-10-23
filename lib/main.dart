@@ -72,6 +72,8 @@ class TopJobsApp extends StatelessWidget {
           create: (final _) {
             final jobProvider = JobProvider();
             // Initialize favorites from device storage
+            // Note: This is async but we can't await here, so favorites will be loaded
+            // when loadJobs() is called in the screens
             jobProvider.initializeFavorites();
             return jobProvider;
           },

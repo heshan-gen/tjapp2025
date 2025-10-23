@@ -13,7 +13,6 @@ import '../services/color_service.dart';
 // Sort options
 enum CategorySortOption {
   alphabetical,
-  jobCount,
   mostVisited,
   flagged,
 }
@@ -543,10 +542,6 @@ class _CategorySelectorState extends State<CategorySelector> {
             .toLowerCase()
             .compareTo(b.key.minititle.toLowerCase()));
         break;
-      case CategorySortOption.jobCount:
-        categoriesWithJobCounts
-            .sort((final a, final b) => b.value.compareTo(a.value));
-        break;
       case CategorySortOption.mostVisited:
         _sortByMostVisited(categoriesWithJobCounts);
         break;
@@ -604,8 +599,6 @@ class _CategorySelectorState extends State<CategorySelector> {
       switch (_currentSortOption) {
         case CategorySortOption.alphabetical:
           return 'Sorted By: Alphabetical';
-        case CategorySortOption.jobCount:
-          return 'Sorted By: Most Jobs';
         case CategorySortOption.mostVisited:
           return 'Sorted By: Most Visited';
         case CategorySortOption.flagged:
@@ -647,36 +640,6 @@ class _CategorySelectorState extends State<CategorySelector> {
                       _currentSortOption == CategorySortOption.alphabetical
                           ? FontWeight.bold
                           : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<CategorySortOption>(
-          value: CategorySortOption.jobCount,
-          child: Row(
-            children: [
-              Icon(
-                Icons.work,
-                size: 16,
-                color: _currentSortOption == CategorySortOption.jobCount
-                    ? (isDarkMode
-                        ? Colors.white
-                        : Theme.of(context).primaryColor)
-                    : null,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Most Jobs',
-                style: TextStyle(
-                  color: _currentSortOption == CategorySortOption.jobCount
-                      ? (isDarkMode
-                          ? Colors.white
-                          : Theme.of(context).primaryColor)
-                      : null,
-                  fontWeight: _currentSortOption == CategorySortOption.jobCount
-                      ? FontWeight.bold
-                      : FontWeight.normal,
                 ),
               ),
             ],
