@@ -116,30 +116,79 @@ class _JobCardWidgetState extends State<JobCardWidget>
         },
       );
 
-      // Increment view count when job is opened
-      context.read<JobProvider>().incrementViewCount(widget.job.comments);
+      print('Attempting to launch URL: $jobUrl');
+      print('Widget mounted status: $mounted');
 
-      // Launch URL in external browser
-      if (await canLaunchUrl(jobUrl)) {
-        await launchUrl(jobUrl, mode: LaunchMode.externalApplication);
-      } else {
-        throw Exception('Could not launch $jobUrl');
+      // Check if widget is still mounted before accessing context
+      if (!mounted) {
+        print('Widget is no longer mounted, skipping URL launch');
+        return;
+      }
+
+      // Increment view count when job is opened (only if mounted)
+      try {
+        context.read<JobProvider>().incrementViewCount(widget.job.comments);
+      } catch (e) {
+        print('Error incrementing view count: $e');
+        // Continue with URL launch even if view count fails
+      }
+
+      // Try multiple launch modes for better compatibility
+      bool launched = false;
+      final List<LaunchMode> launchModes = [
+        LaunchMode.externalApplication,
+        LaunchMode.externalNonBrowserApplication,
+        LaunchMode.platformDefault,
+      ];
+
+      for (LaunchMode mode in launchModes) {
+        try {
+          if (await canLaunchUrl(jobUrl)) {
+            print(
+                'URL can be launched with mode: $mode, attempting to launch...');
+            // Add timeout to prevent hanging
+            launched = await Future.any([
+              launchUrl(jobUrl, mode: mode),
+              Future.delayed(const Duration(seconds: 10), () => false),
+            ]);
+
+            if (launched) {
+              print('URL launched successfully with mode: $mode');
+              break;
+            } else {
+              print('URL launch returned false with mode: $mode');
+            }
+          } else {
+            print('Cannot launch URL with mode: $mode');
+          }
+        } catch (e) {
+          print('Error launching URL with mode $mode: $e');
+          continue;
+        }
+      }
+
+      if (!launched) {
+        throw Exception('Failed to launch URL with any mode: $jobUrl');
       }
     } catch (e) {
       print('Error launching job URL: $e');
-      // Show error message to user
+      // Show error message to user only if widget is still mounted
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to open job: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
+        try {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to open job: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+              duration: const Duration(seconds: 3),
             ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+          );
+        } catch (contextError) {
+          print('Error showing snackbar: $contextError');
+        }
       }
     }
   }

@@ -52,9 +52,9 @@ android {
     defaultConfig {
         applicationId "lk.topjobs.app"
         minSdkVersion flutter.minSdkVersion  // Explicit version
-        targetSdkVersion 33  // Explicit version
-        versionCode 33
-        versionName "33.3"
+        targetSdkVersion 35  // Updated to API level 35
+        versionCode 39
+        versionName "39.0"
     }
 
     buildTypes {

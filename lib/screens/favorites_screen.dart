@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/job_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/job_card_widget.dart';
+import '../widgets/loading_bar_widget.dart';
 // import '../widgets/job_rating_widget.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -90,8 +91,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         builder: (final context, final jobProvider, final child) {
           // Show loading indicator if jobs are still loading
           if (jobProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return Center(
+              child: LoadingBarWidget(
+                loadingText: 'Loading your favorites...',
+                height: 6.0,
+                width: MediaQuery.of(context).size.width * 0.7,
+              ),
             );
           }
 

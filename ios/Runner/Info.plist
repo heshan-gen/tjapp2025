@@ -61,5 +61,12 @@
 	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>mailto</string>
+		<string>tel</string>
+	</array>
 </dict>
 </plist>
