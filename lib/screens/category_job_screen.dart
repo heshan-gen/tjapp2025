@@ -894,8 +894,8 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                   itemCount: filteredCategories.length,
                   itemBuilder: (final context, final index) {
                     final category = filteredCategories[index];
-                    final jobCount =
-                        jobProvider.getJobCountByCategory(category.feedUrl);
+                    // final jobCount =
+                    //     jobProvider.getJobCountByCategory(category.feedUrl);
                     final categoryColor =
                         _colorService.getCategoryColor(category.icon);
                     final isCurrentCategory =
@@ -974,27 +974,6 @@ class _CategorySwitchBottomSheetState extends State<CategorySwitchBottomSheet> {
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: categoryColor.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: Text(
-                                  isCurrentCategory
-                                      ? 'Current'
-                                      : '$jobCount jobs',
-                                  style: TextStyle(
-                                    color: categoryColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
                               ),
                             ],
                           ),
